@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -5,24 +6,30 @@ const multer = require('multer');
 const csvParser = require('csv-parser');
 const fs = require('fs');
 const path = require('path');
-const db = require('./database');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const port = 3000;
 const SECRET_KEY = 'designersale_super_secret_prototype_key'; // For prototype use
 
+// Initialize Supabase client
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('Missing Supabase credentials in .env');
+  process.exit(1);
+}
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from the parent directory (the frontend code)
 app.use(express.static(path.join(__dirname, '..')));
 
-// Serve the main storefront at the root URL
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'DesignerSale Standalone Source.html'));
 });
 
-// Serve the admin panel at /admin
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'admin.html'));
 });
@@ -31,15 +38,19 @@ const upload = multer({ dest: 'uploads/' });
 
 // --- AUTHENTICATION ---
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!row) return res.status(401).json({ error: 'Invalid credentials' });
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
         
-        const token = jwt.sign({ id: row.id, username: row.username }, SECRET_KEY, { expiresIn: '24h' });
-        res.json({ token });
-    });
+    if (error || !data) return res.status(401).json({ error: 'Invalid credentials' });
+    
+    const token = jwt.sign({ id: data.id, username: data.username }, SECRET_KEY, { expiresIn: '24h' });
+    res.json({ token });
 });
 
 const authenticateToken = (req, res, next) => {
@@ -55,263 +66,256 @@ const authenticateToken = (req, res, next) => {
 };
 
 // --- CATEGORIES (Public) ---
-app.get('/api/categories', (req, res) => {
-    db.all('SELECT * FROM categories', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.get('/api/categories', async (req, res) => {
+    const { data, error } = await supabase.from('categories').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
 // --- MERCHANTS (Public Read, Protected Write) ---
-app.get('/api/merchants', (req, res) => {
-    db.all('SELECT * FROM merchants', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        // Map integer booleans back to true/false
-        const merchants = rows.map(r => ({
-            ...r,
-            online: !!r.online,
-            inStore: !!r.inStore
-        }));
-        res.json(merchants);
-    });
+app.get('/api/merchants', async (req, res) => {
+    const { data, error } = await supabase.from('merchants').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    
+    // Convert instore to inStore, etc.
+    const merchants = data.map(r => ({
+        ...r,
+        inStore: r.instore,
+    }));
+    res.json(merchants);
 });
 
-app.post('/api/merchants', authenticateToken, (req, res) => {
+app.post('/api/merchants', authenticateToken, async (req, res) => {
     const { id, name, state, city, online, inStore, focus, email, phone, website, description } = req.body;
     const newId = id || 'm_' + Date.now().toString(36);
     
-    db.run(
-        `INSERT INTO merchants (id, name, state, city, online, inStore, focus, email, phone, website, description) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [newId, name, state, city, online ? 1 : 0, inStore ? 1 : 0, focus, email, phone, website, description],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: newId, ...req.body });
-        }
-    );
+    const { error } = await supabase.from('merchants').insert([{
+        id: newId, name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description
+    }]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: newId, ...req.body });
 });
 
-app.put('/api/merchants/:id', authenticateToken, (req, res) => {
+app.put('/api/merchants/:id', authenticateToken, async (req, res) => {
     const { name, state, city, online, inStore, focus, email, phone, website, description } = req.body;
-    db.run(
-        `UPDATE merchants SET name=?, state=?, city=?, online=?, inStore=?, focus=?, email=?, phone=?, website=?, description=? WHERE id=?`,
-        [name, state, city, online ? 1 : 0, inStore ? 1 : 0, focus, email, phone, website, description, req.params.id],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: req.params.id, ...req.body });
-        }
-    );
+    const { error } = await supabase.from('merchants').update({
+        name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description
+    }).eq('id', req.params.id);
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: req.params.id, ...req.body });
 });
 
-app.delete('/api/merchants/:id', authenticateToken, (req, res) => {
-    db.serialize(() => {
-        db.run('DELETE FROM products WHERE merchantId = ?', [req.params.id]);
-        db.run('DELETE FROM merchants WHERE id = ?', [req.params.id], function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true, deletedId: req.params.id });
-        });
-    });
+app.delete('/api/merchants/:id', authenticateToken, async (req, res) => {
+    // Delete associated products first
+    await supabase.from('products').delete().eq('merchantid', req.params.id);
+    const { error } = await supabase.from('merchants').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
 });
 
 
 // --- BRANDS (Public Read, Protected Write) ---
-app.get('/api/brands', (req, res) => {
-    db.all('SELECT * FROM brands', [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+app.get('/api/brands', async (req, res) => {
+    const { data, error } = await supabase.from('brands').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-app.post('/api/brands', authenticateToken, (req, res) => {
+app.post('/api/brands', authenticateToken, async (req, res) => {
     const { id, name, description, website, founded, country } = req.body;
     const newId = id || 'b_' + Date.now().toString(36);
     
-    db.run(
-        `INSERT INTO brands (id, name, description, website, founded, country) VALUES (?, ?, ?, ?, ?, ?)`,
-        [newId, name, description, website, founded, country],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: newId, ...req.body });
-        }
-    );
+    const { error } = await supabase.from('brands').insert([{
+        id: newId, name, description, website, founded, country
+    }]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: newId, ...req.body });
 });
 
-app.put('/api/brands/:id', authenticateToken, (req, res) => {
+app.put('/api/brands/:id', authenticateToken, async (req, res) => {
     const { name, description, website, founded, country } = req.body;
-    db.run(
-        `UPDATE brands SET name=?, description=?, website=?, founded=?, country=? WHERE id=?`,
-        [name, description, website, founded, country, req.params.id],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: req.params.id, ...req.body });
-        }
-    );
+    const { error } = await supabase.from('brands').update({
+        name, description, website, founded, country
+    }).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: req.params.id, ...req.body });
 });
 
-app.delete('/api/brands/:id', authenticateToken, (req, res) => {
-    db.run('DELETE FROM brands WHERE id = ?', [req.params.id], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, deletedId: req.params.id });
-    });
+app.delete('/api/brands/:id', authenticateToken, async (req, res) => {
+    const { error } = await supabase.from('brands').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
 });
 
 
 // --- PRODUCTS (Public Read, Protected Write) ---
-app.get('/api/products', (req, res) => {
-    const query = `
-        SELECT p.*, b.name as brand, m.name as merchant 
-        FROM products p
-        LEFT JOIN brands b ON p.brandId = b.id
-        LEFT JOIN merchants m ON p.merchantId = m.id
-    `;
-    db.all(query, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        // Parse JSON sizes
-        const products = rows.map(r => ({
-            ...r,
-            sizes: r.sizes ? JSON.parse(r.sizes) : [],
-            newIn: !!r.newIn
-        }));
-        res.json(products);
-    });
+app.get('/api/products', async (req, res) => {
+    const { data, error } = await supabase
+        .from('products')
+        .select(`
+            *,
+            brand:brands(name),
+            merchant:merchants(name)
+        `);
+        
+    if (error) return res.status(500).json({ error: error.message });
+    
+    const products = data.map(r => ({
+        ...r,
+        brandId: r.brandid,
+        merchantId: r.merchantid,
+        discountPct: r.discountpct,
+        newIn: r.newin,
+        brand: r.brand ? r.brand.name : null,
+        merchant: r.merchant ? r.merchant.name : null
+    }));
+    res.json(products);
 });
 
-app.post('/api/products', authenticateToken, (req, res) => {
+app.post('/api/products', authenticateToken, async (req, res) => {
     const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description } = req.body;
     const newId = id || 'p_' + Date.now().toString(36);
     const added = Date.now();
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
-    const sizeStr = JSON.stringify(sizes || []);
 
-    db.run(
-        `INSERT INTO products (id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, added, description) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [newId, category, title, brandId, merchantId, rrp, sale, pct, newIn ? 1 : 0, sizeStr, image, added, description],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: newId, ...req.body, discountPct: pct, added });
-        }
-    );
+    const { error } = await supabase.from('products').insert([{
+        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description
+    }]);
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: newId, ...req.body, discountPct: pct, added });
 });
 
-app.put('/api/products/:id', authenticateToken, (req, res) => {
+app.put('/api/products/:id', authenticateToken, async (req, res) => {
     const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description } = req.body;
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
-    const sizeStr = JSON.stringify(sizes || []);
 
-    db.run(
-        `UPDATE products SET category=?, title=?, brandId=?, merchantId=?, rrp=?, sale=?, discountPct=?, newIn=?, sizes=?, image=?, description=? WHERE id=?`,
-        [category, title, brandId, merchantId, rrp, sale, pct, newIn ? 1 : 0, sizeStr, image, description, req.params.id],
-        function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: req.params.id, ...req.body, discountPct: pct });
-        }
-    );
+    const { error } = await supabase.from('products').update({
+        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description
+    }).eq('id', req.params.id);
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: req.params.id, ...req.body, discountPct: pct });
 });
 
-app.delete('/api/products/:id', authenticateToken, (req, res) => {
-    db.run('DELETE FROM products WHERE id = ?', [req.params.id], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, deletedId: req.params.id });
-    });
+app.delete('/api/products/:id', authenticateToken, async (req, res) => {
+    const { error } = await supabase.from('products').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
 });
 
 // --- BULK UPLOAD ---
-app.post('/api/products/bulk', authenticateToken, upload.single('file'), (req, res) => {
+app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
     const results = [];
     const errors = [];
     let rowCount = 0;
 
-    // We need existing brands and merchants to validate foreign keys
-    db.all('SELECT id FROM brands', (err, brandRows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const validBrands = new Set(brandRows.map(b => b.id));
+    const { data: brandRows, error: brandErr } = await supabase.from('brands').select('id');
+    if (brandErr) return res.status(500).json({ error: brandErr.message });
+    const validBrands = new Set(brandRows.map(b => b.id));
 
-        db.all('SELECT id FROM merchants', (err, merchRows) => {
-            if (err) return res.status(500).json({ error: err.message });
-            const validMerchants = new Set(merchRows.map(m => m.id));
+    const { data: merchRows, error: merchErr } = await supabase.from('merchants').select('id');
+    if (merchErr) return res.status(500).json({ error: merchErr.message });
+    const validMerchants = new Set(merchRows.map(m => m.id));
 
-            fs.createReadStream(req.file.path)
-                .pipe(csvParser())
-                .on('data', (data) => {
-                    rowCount++;
-                    const { title, brandId, merchantId, category, rrp, sale, sizes, image, description } = data;
-                    
-                    // Validation
-                    if (!title || !brandId || !merchantId || !category || !rrp || !sale) {
-                        errors.push({ row: rowCount, msg: 'Missing required fields' });
-                        return; // Skip row
-                    }
-                    if (!validBrands.has(brandId)) {
-                        errors.push({ row: rowCount, msg: `Unknown brandId: ${brandId}` });
-                        return; // Skip row
-                    }
-                    if (!validMerchants.has(merchantId)) {
-                        errors.push({ row: rowCount, msg: `Unknown merchantId: ${merchantId}` });
-                        return; // Skip row
-                    }
+    fs.createReadStream(req.file.path)
+        .pipe(csvParser())
+        .on('data', (data) => {
+            rowCount++;
+            const { title, brandId, merchantId, category, rrp, sale, sizes, image, description } = data;
+            
+            if (!title || !brandId || !merchantId || !category || !rrp || !sale) {
+                errors.push({ row: rowCount, msg: 'Missing required fields' });
+                return;
+            }
+            if (!validBrands.has(brandId)) {
+                errors.push({ row: rowCount, msg: `Unknown brandId: ${brandId}` });
+                return;
+            }
+            if (!validMerchants.has(merchantId)) {
+                errors.push({ row: rowCount, msg: `Unknown merchantId: ${merchantId}` });
+                return;
+            }
 
-                    const numRRP = parseInt(rrp, 10);
-                    const numSale = parseInt(sale, 10);
-                    if (isNaN(numRRP) || isNaN(numSale)) {
-                        errors.push({ row: rowCount, msg: 'RRP and Sale must be numbers' });
-                        return; // Skip row
-                    }
+            const numRRP = parseInt(rrp, 10);
+            const numSale = parseInt(sale, 10);
+            if (isNaN(numRRP) || isNaN(numSale)) {
+                errors.push({ row: rowCount, msg: 'RRP and Sale must be numbers' });
+                return;
+            }
 
-                    results.push({
-                        title, brandId, merchantId, category, 
-                        rrp: numRRP, sale: numSale, 
-                        sizes: sizes ? sizes.split(',').map(s => s.trim()) : [], 
-                        image: image || null, 
-                        description: description || null
-                    });
-                })
-                .on('end', () => {
-                    // Remove temp file
-                    fs.unlinkSync(req.file.path);
+            results.push({
+                title, brandid: brandId, merchantid: merchantId, category, 
+                rrp: numRRP, sale: numSale, 
+                sizes: sizes ? sizes.split(',').map(s => s.trim()) : [], 
+                image: image || null, 
+                description: description || null
+            });
+        })
+        .on('end', async () => {
+            fs.unlinkSync(req.file.path);
 
-                    if (results.length === 0) {
-                        return res.json({ success: true, imported: 0, errors });
-                    }
+            if (results.length === 0) {
+                return res.json({ success: true, imported: 0, errors });
+            }
 
-                    // Insert valid rows
-                    const stmt = db.prepare(`INSERT INTO products (id, category, title, brandId, merchantId, rrp, sale, discountPct, sizes, image, added, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-                    const now = Date.now();
-                    
-                    db.serialize(() => {
-                        db.run('BEGIN TRANSACTION');
-                        results.forEach((r, i) => {
-                            const newId = 'p_bulk_' + Date.now().toString(36) + '_' + i;
-                            const pct = Math.round(((r.rrp - r.sale) / r.rrp) * 100);
-                            stmt.run([newId, r.category, r.title, r.brandId, r.merchantId, r.rrp, r.sale, pct, JSON.stringify(r.sizes), r.image, now, r.description]);
-                        });
-                        db.run('COMMIT', (err) => {
-                            stmt.finalize();
-                            if (err) return res.status(500).json({ error: 'Transaction failed', details: err.message });
-                            res.json({ success: true, imported: results.length, errors });
-                        });
-                    });
-                });
+            const now = Date.now();
+            const insertData = results.map((r, i) => {
+                const newId = 'p_bulk_' + Date.now().toString(36) + '_' + i;
+                const pct = Math.round(((r.rrp - r.sale) / r.rrp) * 100);
+                return {
+                    id: newId,
+                    category: r.category,
+                    title: r.title,
+                    brandid: r.brandid,
+                    merchantid: r.merchantid,
+                    rrp: r.rrp,
+                    sale: r.sale,
+                    discountpct: pct,
+                    sizes: r.sizes,
+                    image: r.image,
+                    added: now,
+                    description: r.description
+                };
+            });
+
+            const { error } = await supabase.from('products').insert(insertData);
+            if (error) return res.status(500).json({ error: 'Transaction failed', details: error.message });
+            
+            res.json({ success: true, imported: results.length, errors });
         });
-    });
 });
 
-
 // --- STATS ---
-app.get('/api/stats', (req, res) => {
-    db.serialize(() => {
-        let stats = {};
-        db.get('SELECT COUNT(*) as count FROM merchants', (err, row) => { stats.totalMerchants = row.count; });
-        db.get('SELECT COUNT(*) as count FROM brands', (err, row) => { stats.totalBrands = row.count; });
-        db.get('SELECT COUNT(*) as count FROM products', (err, row) => { stats.totalProducts = row.count; });
-        db.get('SELECT COUNT(*) as count FROM products WHERE newIn = 1 OR added > ?', [Date.now() - (48 * 3600000)], (err, row) => { stats.newIn = row?.count || 0; });
-        db.get('SELECT AVG(discountPct) as avg FROM products', (err, row) => { 
-            stats.avgDiscount = row?.avg ? Math.round(row.avg) : 0; 
-            res.json(stats);
+app.get('/api/stats', async (req, res) => {
+    try {
+        const [{ count: totalMerchants }, { count: totalBrands }, { count: totalProducts }, { count: newInCount }, { data: avgData }] = await Promise.all([
+            supabase.from('merchants').select('*', { count: 'exact', head: true }),
+            supabase.from('brands').select('*', { count: 'exact', head: true }),
+            supabase.from('products').select('*', { count: 'exact', head: true }),
+            supabase.from('products').select('*', { count: 'exact', head: true }).or(`newin.eq.true,added.gt.${Date.now() - (48 * 3600000)}`),
+            supabase.from('products').select('discountpct')
+        ]);
+        
+        let avgDiscount = 0;
+        if (avgData && avgData.length > 0) {
+            const sum = avgData.reduce((acc, curr) => acc + (curr.discountpct || 0), 0);
+            avgDiscount = Math.round(sum / avgData.length);
+        }
+
+        res.json({
+            totalMerchants,
+            totalBrands,
+            totalProducts,
+            newIn: newInCount,
+            avgDiscount
         });
-    });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(port, () => {
