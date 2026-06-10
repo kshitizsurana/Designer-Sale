@@ -18,9 +18,17 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing Supabase credentials in .env');
-  process.exit(1);
+  // Don't exit, let the endpoints return a 500 with the error so we can debug on Vercel
 }
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = (SUPABASE_URL && SUPABASE_KEY) ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// Middleware to check if Supabase is initialized
+app.use((req, res, next) => {
+    if (!supabase) {
+        return res.status(500).json({ error: 'Supabase credentials are not configured in Vercel Environment Variables.' });
+    }
+    next();
+});
 
 app.use(cors());
 app.use(express.json());
