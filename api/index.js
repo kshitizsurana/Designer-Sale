@@ -24,15 +24,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '..')));
-
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'DesignerSale Standalone Source.html'));
-});
-
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'admin.html'));
-});
+// Vercel serves static files natively via vercel.json configuration.
+// No express.static or static HTML routes needed here.
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -318,6 +311,4 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`DesignerSale Backend running on http://localhost:${port}`);
-});
+module.exports = app;
