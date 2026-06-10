@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -35,7 +34,7 @@ app.use(express.json());
 // Vercel serves static files natively via vercel.json configuration.
 // No express.static or static HTML routes needed here.
 
-const upload = multer({ dest: '/tmp/uploads/' });
+const upload = multer({ storage: multer.memoryStorage() });
 
 // --- AUTHENTICATION ---
 
@@ -222,7 +221,8 @@ app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (
     if (merchErr) return res.status(500).json({ error: merchErr.message });
     const validMerchants = new Set(merchRows.map(m => m.id));
 
-    fs.createReadStream(req.file.path)
+    const { Readable } = require('stream');
+    Readable.from(req.file.buffer)
         .pipe(csvParser())
         .on('data', (data) => {
             rowCount++;
@@ -257,8 +257,6 @@ app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (
             });
         })
         .on('end', async () => {
-            fs.unlinkSync(req.file.path);
-
             if (results.length === 0) {
                 return res.json({ success: true, imported: 0, errors });
             }
