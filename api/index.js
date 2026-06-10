@@ -35,7 +35,7 @@ app.use(express.json());
 // Vercel serves static files natively via vercel.json configuration.
 // No express.static or static HTML routes needed here.
 
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: '/tmp/uploads/' });
 
 // --- AUTHENTICATION ---
 
