@@ -76,7 +76,7 @@ function ProductDetailPage({ productId, data, cardVariant, wishlist, onToggleWis
               {/* Discount badge */}
               <div style={{ position: 'absolute', top: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {product.newIn && <span className="pill pill-ink">New In</span>}
-                <span className="pill pill-gold" style={{ fontSize: 12, padding: '6px 12px' }}>{product.discountPct}% Off</span>
+                {product.discountPct > 0 && <span className="pill pill-gold" style={{ fontSize: 12, padding: '6px 12px' }}>{product.discountPct}% Off</span>}
               </div>
             </div>
             {/* Thumbnail strip */}
@@ -149,7 +149,13 @@ function ProductDetailPage({ productId, data, cardVariant, wishlist, onToggleWis
               <button
                 className="btn btn-gold"
                 style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => onShop(product)}
+                onClick={() => {
+                  if (merchant && merchant.website) {
+                    window.open(merchant.website, '_blank');
+                  } else {
+                    alert(`Redirecting to ${product.merchant} website...`);
+                  }
+                }}
               >
                 Shop at {product.merchant} <Icon.ExternalLink style={{ marginLeft: 4 }} />
               </button>

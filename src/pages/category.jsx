@@ -16,6 +16,7 @@ function CategoryPage({ data, categoryId, cardVariant, wishlist, onToggleWishlis
   const [priceMax, setPriceMax]         = useStateCat(800);     // cap
   const [sort, setSort]                 = useStateCat('latest');
   const [collapsed, setCollapsed]       = useStateCat(new Set());
+  const [visibleCount, setVisibleCount] = useStateCat(12);
 
   const toggleSet = (set, val, fn) => {
     const next = new Set(set);
@@ -238,7 +239,7 @@ function CategoryPage({ data, categoryId, cardVariant, wishlist, onToggleWishlis
               </div>
             ) : (
               <div className="product-grid cols-3">
-                {filtered.map(p => (
+                {filtered.slice(0, visibleCount).map(p => (
                   <ProductCard
                     key={p.id}
                     product={p}
@@ -246,14 +247,15 @@ function CategoryPage({ data, categoryId, cardVariant, wishlist, onToggleWishlis
                     isWishlisted={wishlist.has(p.id)}
                     onToggleWishlist={onToggleWishlist}
                     onShop={onShop}
+                    onNav={onNav}
                   />
                 ))}
               </div>
             )}
 
-            {filtered.length > 9 && (
+            {filtered.length > visibleCount && (
               <div style={{ textAlign: 'center', marginTop: 'var(--pad-xl)' }}>
-                <button className="btn btn-outline">Load more</button>
+                <button className="btn btn-outline" onClick={() => setVisibleCount(c => c + 12)}>Load more</button>
               </div>
             )}
           </section>

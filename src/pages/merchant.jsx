@@ -25,7 +25,7 @@ function MerchantPage({ merchantId, data, cardVariant, wishlist, onToggleWishlis
   const catIds = [...new Set(rawProducts.map(p => p.category))];
   const catObjects = data.categories.filter(c => catIds.includes(c.id));
   const brandIds = [...new Set(rawProducts.map(p => p.brandId))];
-  const brands = brandIds.map(id => window.DB.brands.get(id)).filter(Boolean).slice(0, 8);
+  const brands = brandIds.map(id => data.brands.find(b => b.id === id)).filter(Boolean).slice(0, 8);
 
   const filtered = useMemeMerch(() => {
     let out = rawProducts.slice();

@@ -24,7 +24,7 @@ function BrandPage({ brandId, data, cardVariant, wishlist, onToggleWishlist, onS
 
   // Find which merchants carry this brand
   const merchantIds = [...new Set(rawProducts.map(p => p.merchantId))];
-  const merchants = merchantIds.map(id => window.DB.merchants.get(id)).filter(Boolean).slice(0, 6);
+  const merchants = merchantIds.map(id => data.merchants.find(m => m.id === id)).filter(Boolean).slice(0, 6);
 
   // Categories this brand appears in
   const catIds = [...new Set(rawProducts.map(p => p.category))];

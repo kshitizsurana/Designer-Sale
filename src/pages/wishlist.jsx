@@ -72,7 +72,7 @@ function WishlistPage({ data, wishlist, cardVariant, onToggleWishlist, onShop, o
                   <button className="btn btn-ghost btn-sm" onClick={() => items.forEach(p => onToggleWishlist(p.id))}>
                     Clear all
                   </button>
-                  <button className="btn btn-ink btn-sm">
+                  <button className="btn btn-ink btn-sm" onClick={() => onNav('home', null, 'email')}>
                     Email me when these drop
                   </button>
                 </div>
@@ -87,6 +87,7 @@ function WishlistPage({ data, wishlist, cardVariant, onToggleWishlist, onShop, o
                     isWishlisted
                     onToggleWishlist={onToggleWishlist}
                     onShop={onShop}
+                    onNav={onNav}
                   />
                 ))}
               </div>

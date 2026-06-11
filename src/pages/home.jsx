@@ -166,7 +166,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
             <button
               key={b.id}
               className="boutique-strip-item"
-              onClick={() => onNav('boutiques')}
+              onClick={() => onNav('merchant', null, null, b.id)}
             >
               <div className="b-wrap">
                 <div style={{ fontStyle: b.name.length > 14 ? 'italic' : 'normal' }}>{b.name}</div>
@@ -214,8 +214,8 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
               Stocked by 40+ boutiques nationwide. Each piece is hand-finished — sequined, beaded, or pintucked — in workshops outside Jaipur. End-of-season stock now reduced.
             </p>
             <div style={{ display: 'flex', gap: 12 }}>
-              <button className="btn btn-ink">Shop the brand</button>
-              <button className="btn btn-ghost">Read the story</button>
+              <button className="btn btn-ink" onClick={() => onNav('brand', null, null, 'fashion-spectrum')}>Shop the brand</button>
+              <button className="btn btn-ghost" onClick={() => onNav('about')}>Read the story</button>
             </div>
           </div>
         </div>

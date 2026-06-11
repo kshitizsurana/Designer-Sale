@@ -10,10 +10,19 @@ function Header({ currentPage, currentCategory, wishlistCount, onNav, categories
 
   function handleSearch(e) {
     e.preventDefault();
-    if (searchVal.trim()) {
-      setSearchOpen(false);
-      setSearchVal('');
-    }
+    const q = searchVal.trim().toLowerCase();
+    if (!q) return;
+    setSearchOpen(false);
+    setSearchVal('');
+    // Simple keyword-to-category routing
+    if (q.includes('maxi') || q.includes('dress')) onNav('category', 'maxi-dresses');
+    else if (q.includes('kaftan')) onNav('category', 'kaftans');
+    else if (q.includes('top') || q.includes('blouse')) onNav('category', 'tops-blouses');
+    else if (q.includes('coat') || q.includes('jacket')) onNav('category', 'coats-jackets');
+    else if (q.includes('bag') || q.includes('access')) onNav('category', 'bags-accessories');
+    else if (q.includes('jewel') || q.includes('ring') || q.includes('necklace')) onNav('category', 'jewellery');
+    else if (q.includes('boutique') || q.includes('store')) onNav('boutiques');
+    else onNav('category', 'maxi-dresses'); // default to first category
   }
 
   return (
@@ -49,7 +58,7 @@ function Header({ currentPage, currentCategory, wishlistCount, onNav, categories
 
           <div className="header-actions">
             {searchOpen ? (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--ink)', padding: '6px 4px' }}>
+              <form onSubmit={handleSearch} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, borderBottom: '1px solid var(--ink)', padding: '6px 4px' }}>
                 <Icon.Search />
                 <input
                   autoFocus
@@ -59,10 +68,13 @@ function Header({ currentPage, currentCategory, wishlistCount, onNav, categories
                   onBlur={() => { if (!searchVal) setSearchOpen(false); }}
                   style={{ border: 0, background: 'transparent', outline: 'none', fontFamily: 'var(--font-body)', fontSize: 13, width: 180, color: 'var(--ink)' }}
                 />
-                <button className="icon-btn" style={{ width: 24, height: 24 }} onClick={() => { setSearchVal(''); setSearchOpen(false); }}>
+                <button type="submit" className="icon-btn" style={{ width: 24, height: 24 }} aria-label="Search">
+                  <Icon.Search style={{ opacity: 0.5 }} />
+                </button>
+                <button type="button" className="icon-btn" style={{ width: 24, height: 24 }} onClick={() => { setSearchVal(''); setSearchOpen(false); }}>
                   <Icon.Close />
                 </button>
-              </div>
+              </form>
             ) : (
               <button className="icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search">
                 <Icon.Search />

@@ -91,7 +91,7 @@ function AdminLogin({ onLogin }) {
           </button>
         </form>
         <div style={{ marginTop: 20, fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-muted)', letterSpacing: '0.14em', textAlign: 'center', textTransform: 'uppercase' }}>
-          <a href="DesignerSale Standalone Source.html" style={{ color: 'var(--gold-deep)' }}>← Back to store</a>
+          <a href="/" style={{ color: 'var(--gold-deep)' }}>← Back to store</a>
         </div>
       </div>
     </div>
@@ -170,7 +170,7 @@ function AdminApp() {
         <div className="admin-topbar">
           <div className="admin-topbar-title">{pageTitles[page]}</div>
           <div className="admin-topbar-actions">
-            <a href="DesignerSale Standalone Source.html" target="_blank" className="btn btn-ghost btn-sm">
+            <a href="/" target="_blank" className="btn btn-ghost btn-sm">
               <AIcon.External /> View store
             </a>
           </div>
