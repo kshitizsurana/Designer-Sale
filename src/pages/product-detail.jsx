@@ -146,19 +146,25 @@ function ProductDetailPage({ productId, data, cardVariant, wishlist, onToggleWis
 
             {/* CTAs */}
             <div className="pd-ctas">
-              <button
-                className="btn btn-gold"
-                style={{ flex: 1, justifyContent: 'center' }}
-                onClick={() => {
-                  if (merchant && merchant.website) {
-                    window.open(merchant.website, '_blank');
-                  } else {
-                    alert(`Redirecting to ${product.merchant} website...`);
-                  }
-                }}
-              >
-                Shop at {product.merchant} <Icon.ExternalLink style={{ marginLeft: 4 }} />
-              </button>
+              {product.inventory === 0 ? (
+                <button className="btn btn-muted" style={{ flex: 1, justifyContent: 'center' }} disabled>
+                  Sold Out
+                </button>
+              ) : (
+                <button
+                  className="btn btn-gold"
+                  style={{ flex: 1, justifyContent: 'center' }}
+                  onClick={() => {
+                    if (merchant && merchant.website) {
+                      window.open(merchant.website, '_blank');
+                    } else {
+                      alert(`Redirecting to ${product.merchant} website...`);
+                    }
+                  }}
+                >
+                  Shop at {product.merchant} <Icon.ExternalLink style={{ marginLeft: 4 }} />
+                </button>
+              )}
               <button
                 className={`pd-heart-btn ${isWishlisted ? 'active' : ''}`}
                 onClick={() => onToggleWishlist(product.id)}

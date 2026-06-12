@@ -6,7 +6,7 @@ const { useState: usePState, useEffect: usePEffect, useMemo: useMemo_P } = React
 function ProductFormModal({ product, categories, merchants, brands, onSave, onClose }) {
   const [form, setForm] = usePState(product || {
     title: '', category: 'maxi-dresses', merchantId: merchants[0]?.id || '', brandId: brands[0]?.id || '',
-    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: ''
+    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', inventory: 0
   });
   const [sizeInput, setSizeInput] = usePState('');
   const [errors, setErrors] = usePState({});
@@ -47,6 +47,7 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
       ...form,
       rrp: Number(form.rrp),
       sale: Number(form.sale),
+      inventory: Number(form.inventory) || 0
     });
   }
 
@@ -91,7 +92,7 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
               </div>
             </div>
 
-            <div className="form-row">
+            <div className="form-row-3">
               <div className="form-group">
                 <label className="form-label">RRP ($) <span>*</span></label>
                 <input type="number" className={`form-input ${errors.rrp ? 'error' : ''}`} value={form.rrp || ''} onChange={e => set('rrp', e.target.value)} placeholder="0" />
@@ -101,6 +102,10 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
                 <label className="form-label">Sale Price ($) <span>*</span></label>
                 <input type="number" className={`form-input ${errors.sale ? 'error' : ''}`} value={form.sale || ''} onChange={e => set('sale', e.target.value)} placeholder="0" />
                 {errors.sale && <div className="form-error">{errors.sale}</div>}
+              </div>
+              <div className="form-group">
+                <label className="form-label">Inventory (Qty)</label>
+                <input type="number" className="form-input" value={form.inventory || 0} onChange={e => set('inventory', e.target.value)} placeholder="0" />
               </div>
             </div>
 
@@ -297,12 +302,13 @@ function AdminProducts({ toast }) {
               <th>RRP</th>
               <th>Sale</th>
               <th>%</th>
+              <th>Inv</th>
               <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan="8" style={{textAlign: 'center', padding: 30}}>Loading...</td></tr> : filtered.length === 0 ? (
-              <tr><td colSpan="8">
+            {loading ? <tr><td colSpan="9" style={{textAlign: 'center', padding: 30}}>Loading...</td></tr> : filtered.length === 0 ? (
+              <tr><td colSpan="9">
                 <div className="admin-empty">
                   <div className="admin-empty-icon"><AIcon.Products /></div>
                   <h3>No products found</h3>
@@ -329,6 +335,9 @@ function AdminProducts({ toast }) {
                 <td style={{ color: 'var(--ink-muted)', textDecoration: 'line-through' }}>${p.rrp}</td>
                 <td style={{ fontWeight: 600 }}>${p.sale}</td>
                 <td><span className="badge badge-gold">{p.discountPct}%</span></td>
+                <td>
+                  {p.inventory === 0 ? <span className="badge badge-danger">Sold Out</span> : <span className="badge badge-muted">{p.inventory}</span>}
+                </td>
                 <td className="col-actions">
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                     <button className="btn-icon btn btn-ghost btn-xs" title="Edit" onClick={() => { setEditItem(p); setShowForm(true); }}><AIcon.Edit /></button>

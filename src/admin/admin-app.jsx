@@ -10,6 +10,7 @@ const AIcon = {
   Brands: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   Products: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>,
   Upload: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>,
+  LandingPages: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>,
   Logout: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   Close: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="6" y1="18" x2="18" y2="6"/></svg>,
   Plus: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
@@ -129,9 +130,10 @@ function AdminApp() {
     { id: 'merchants', label: 'Merchants', Icon: AIcon.Merchants, count: stats.totalMerchants },
     { id: 'brands',   label: 'Brands',    Icon: AIcon.Brands,    count: stats.totalBrands },
     { id: 'products', label: 'Products',  Icon: AIcon.Products,  count: stats.totalProducts },
+    { id: 'landing-pages', label: 'Landing Pages', Icon: AIcon.LandingPages },
   ];
 
-  const pageTitles = { dashboard: 'Dashboard', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload' };
+  const pageTitles = { dashboard: 'Dashboard', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages' };
 
   return (
     <div className="admin-shell">
@@ -180,6 +182,7 @@ function AdminApp() {
           {page === 'merchants' && <AdminMerchants toast={showToast} />}
           {page === 'brands'   && <AdminBrands toast={showToast} />}
           {page === 'products' && <AdminProducts toast={showToast} />}
+          {page === 'landing-pages' && <AdminLandingPages toast={showToast} />}
           {page === 'upload'   && <AdminBulkUpload toast={showToast} />}
         </div>
       </div>

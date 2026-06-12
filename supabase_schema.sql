@@ -33,7 +33,10 @@ CREATE TABLE merchants (
   email TEXT,
   phone TEXT,
   website TEXT,
-  description TEXT
+  description TEXT,
+  facebook TEXT,
+  instagram TEXT,
+  best_contact_method TEXT
 );
 
 -- Products table
@@ -50,5 +53,16 @@ CREATE TABLE products (
   sizes JSONB,
   image TEXT,
   added BIGINT,
-  description TEXT
+  description TEXT,
+  inventory INTEGER DEFAULT 0
+);
+
+-- Landing Pages table
+CREATE TABLE landing_pages (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  short_description TEXT,
+  image TEXT,
+  products JSONB DEFAULT '[]'::jsonb,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

@@ -7,6 +7,7 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
   const [form, setForm] = useMState(merchant || {
     name: '', city: '', state: '', focus: '', email: '', phone: '',
     website: '', description: '', online: true, inStore: true,
+    facebook: '', instagram: '', bestContactMethod: 'email'
   });
   const [errors, setErrors] = useMState({});
 
@@ -80,6 +81,24 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
               <label className="form-label">Website URL</label>
               <input className="form-input" type="url" value={form.website || ''} onChange={e => set('website', e.target.value)} placeholder="https://boutique.com.au" />
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Facebook URL</label>
+                <input className="form-input" type="url" value={form.facebook || ''} onChange={e => set('facebook', e.target.value)} placeholder="https://facebook.com/..." />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Instagram URL</label>
+                <input className="form-input" type="url" value={form.instagram || ''} onChange={e => set('instagram', e.target.value)} placeholder="https://instagram.com/..." />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Best Contact Method</label>
+              <select className="form-input admin-select" value={form.bestContactMethod || 'email'} onChange={e => set('bestContactMethod', e.target.value)}>
+                <option value="email">Email</option>
+                <option value="facebook">Facebook</option>
+                <option value="instagram">Instagram</option>
+              </select>
+            </div>
             <div style={{ display: 'flex', gap: 24 }}>
               <div className="toggle-wrap" onClick={() => set('online', !form.online)}>
                 <div className={`toggle ${form.online ? 'on' : ''}`} />
@@ -122,6 +141,67 @@ function DeleteConfirm({ item, entity, onConfirm, onClose }) {
   );
 }
 
+function MerchantBulkUploadModal({ onClose, onComplete }) {
+  const [file, setFile] = useMState(null);
+  const [uploading, setUploading] = useMState(false);
+  const [error, setError] = useMState(null);
+
+  async function handleUpload(e) {
+    e.preventDefault();
+    if (!file) { setError('Please select a CSV file.'); return; }
+    
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      
+      const token = localStorage.getItem('ds_token');
+      const res = await fetch('https://designer-sale.vercel.app/api/merchants/bulk', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Upload failed');
+      onComplete(data.count);
+    } catch(err) {
+      setError(err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="admin-modal-overlay" onClick={onClose}>
+      <div className="admin-modal" onClick={e => e.stopPropagation()}>
+        <div className="admin-modal-head">
+          <div className="admin-modal-title">Bulk Upload Merchants</div>
+          <button className="btn-icon" onClick={onClose}><AIcon.Close /></button>
+        </div>
+        <form onSubmit={handleUpload} style={{ display: 'contents' }}>
+          <div className="admin-modal-body">
+            <p style={{ fontSize: 13, color: 'var(--ink-soft)', marginBottom: 20 }}>
+              Upload a CSV file. Required columns: <code>name</code>. Optional columns: <code>state</code>, <code>city</code>, <code>online</code>, <code>inStore</code>, <code>focus</code>, <code>email</code>, <code>phone</code>, <code>website</code>, <code>description</code>, <code>facebook</code>, <code>instagram</code>, <code>bestContactMethod</code>.
+            </p>
+            {error && <div className="form-error" style={{ marginBottom: 16 }}>{error}</div>}
+            <div className="form-group">
+              <label className="form-label">CSV File</label>
+              <input type="file" accept=".csv" onChange={e => setFile(e.target.files[0])} className="form-input" style={{ padding: 8 }} />
+            </div>
+          </div>
+          <div className="admin-modal-footer">
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onClose} disabled={uploading}>Cancel</button>
+            <button type="submit" className="btn btn-gold btn-sm" disabled={uploading || !file}>
+              {uploading ? 'Uploading...' : 'Upload CSV'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function AdminMerchants({ toast }) {
   const [merchants, setMerchants] = useMState([]);
   const [products, setProducts] = useMState([]);
@@ -130,6 +210,7 @@ function AdminMerchants({ toast }) {
   const [channelFilter, setChannelFilter] = useMState('all');
   const [editItem, setEditItem] = useMState(null);
   const [showForm, setShowForm] = useMState(false);
+  const [showBulk, setShowBulk] = useMState(false);
   const [deleteItem, setDeleteItem] = useMState(null);
   const [loading, setLoading] = useMState(true);
 
@@ -200,9 +281,14 @@ function AdminMerchants({ toast }) {
           <div className="admin-section-title">Merchants</div>
           <div className="admin-section-sub">{merchants.length} boutiques in directory</div>
         </div>
-        <button className="btn btn-gold btn-sm" onClick={() => { setEditItem(null); setShowForm(true); }}>
-          <AIcon.Plus /> Add merchant
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-outline btn-sm" onClick={() => setShowBulk(true)}>
+            <AIcon.Upload /> Bulk Upload
+          </button>
+          <button className="btn btn-gold btn-sm" onClick={() => { setEditItem(null); setShowForm(true); }}>
+            <AIcon.Plus /> Add merchant
+          </button>
+        </div>
       </div>
 
       {/* Toolbar */}
@@ -284,6 +370,7 @@ function AdminMerchants({ toast }) {
       </div>
 
       {showForm && <MerchantFormModal merchant={editItem} onSave={handleSave} onClose={() => { setShowForm(false); setEditItem(null); }} />}
+      {showBulk && <MerchantBulkUploadModal onClose={() => setShowBulk(false)} onComplete={(count) => { setShowBulk(false); toast(`Uploaded ${count} merchants`, 'success'); refresh(); }} />}
       {deleteItem && <DeleteConfirm item={deleteItem} entity="merchant" onConfirm={handleDelete} onClose={() => setDeleteItem(null)} />}
     </div>
   );

@@ -38,17 +38,27 @@ function ProductCard({ product, variant = 'editorial', isWishlisted, onToggleWis
           label={label || 'product shot'}
         />
         <div className="pcard-badges">
-          {product.newIn && <span className="pill pill-ink">New In</span>}
-          {product.discountPct > 0 && <span className="pill pill-gold">{product.discountPct}% Off</span>}
+          {product.inventory === 0 ? (
+            <span className="pill pill-danger">Sold Out</span>
+          ) : (
+            <>
+              {product.newIn && <span className="pill pill-ink">New In</span>}
+              {product.discountPct > 0 && <span className="pill pill-gold">{product.discountPct}% Off</span>}
+            </>
+          )}
         </div>
         <button className={`pcard-heart ${isWishlisted ? 'active' : ''}`} onClick={clickHeart} aria-label="Save to wishlist">
           <HeartIcon />
         </button>
         {v === 'editorial' && (
           <div className="pcard-shop">
-            <button className="btn btn-ink btn-sm btn-block" onClick={clickShop}>
-              Shop at {product.merchant} <Icon.ArrowRight />
-            </button>
+            {product.inventory === 0 ? (
+              <button className="btn btn-muted btn-sm btn-block" disabled>Sold Out</button>
+            ) : (
+              <button className="btn btn-ink btn-sm btn-block" onClick={clickShop}>
+                Shop at {product.merchant} <Icon.ArrowRight />
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -62,10 +72,14 @@ function ProductCard({ product, variant = 'editorial', isWishlisted, onToggleWis
           <span className="pcard-sale">${product.sale}</span>
         </div>
         {v === 'boxed' && (
-          <button className="btn btn-outline btn-sm" style={{ marginTop: 10, justifyContent: 'space-between' }} onClick={clickShop}>
-            Shop at {product.merchant}
-            <Icon.ArrowRight />
-          </button>
+          product.inventory === 0 ? (
+            <button className="btn btn-outline btn-sm" disabled style={{ marginTop: 10, justifyContent: 'center' }}>Sold Out</button>
+          ) : (
+            <button className="btn btn-outline btn-sm" style={{ marginTop: 10, justifyContent: 'space-between' }} onClick={clickShop}>
+              Shop at {product.merchant}
+              <Icon.ArrowRight />
+            </button>
+          )
         )}
       </div>
     </article>

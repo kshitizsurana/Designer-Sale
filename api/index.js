@@ -81,25 +81,28 @@ app.get('/api/merchants', async (req, res) => {
     const merchants = data.map(r => ({
         ...r,
         inStore: r.instore,
+        bestContactMethod: r.best_contact_method
     }));
     res.json(merchants);
 });
 
 app.post('/api/merchants', authenticateToken, async (req, res) => {
-    const { id, name, state, city, online, inStore, focus, email, phone, website, description } = req.body;
+    const { id, name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod } = req.body;
     const newId = id || 'm_' + Date.now().toString(36);
     
     const { error } = await supabase.from('merchants').insert([{
-        id: newId, name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description
+        id: newId, name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description,
+        facebook, instagram, best_contact_method: bestContactMethod
     }]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/merchants/:id', authenticateToken, async (req, res) => {
-    const { name, state, city, online, inStore, focus, email, phone, website, description } = req.body;
+    const { name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod } = req.body;
     const { error } = await supabase.from('merchants').update({
-        name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description
+        name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description,
+        facebook, instagram, best_contact_method: bestContactMethod
     }).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -112,6 +115,56 @@ app.delete('/api/merchants/:id', authenticateToken, async (req, res) => {
     const { error } = await supabase.from('merchants').delete().eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true, deletedId: req.params.id });
+});
+
+app.post('/api/merchants/bulk', authenticateToken, upload.single('file'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const results = [];
+    const errors = [];
+    let rowCount = 0;
+
+    const { Readable } = require('stream');
+    Readable.from(req.file.buffer)
+        .pipe(csvParser())
+        .on('data', (data) => {
+            rowCount++;
+            const { name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod } = data;
+            
+            if (!name) {
+                errors.push({ row: rowCount, msg: 'Missing required field: name' });
+                return;
+            }
+
+            results.push({
+                id: 'm_' + Date.now().toString(36) + rowCount,
+                name, state, city,
+                online: String(online).toLowerCase() === 'true' || String(online) === '1',
+                instore: String(inStore).toLowerCase() === 'true' || String(inStore) === '1',
+                focus, email, phone, website, description,
+                facebook, instagram, best_contact_method: bestContactMethod
+            });
+        })
+        .on('end', async () => {
+            if (errors.length > 0) {
+                return res.status(400).json({ errors, message: `Found ${errors.length} errors in CSV.` });
+            }
+            if (results.length === 0) {
+                return res.status(400).json({ error: 'CSV file is empty or invalid.' });
+            }
+
+            // Insert in batches
+            const batchSize = 50;
+            for (let i = 0; i < results.length; i += batchSize) {
+                const batch = results.slice(i, i + batchSize);
+                const { error } = await supabase.from('merchants').insert(batch);
+                if (error) {
+                    return res.status(500).json({ error: `Insert failed at row ${i}: ` + error.message });
+                }
+            }
+            
+            res.json({ success: true, count: results.length });
+        });
 });
 
 
@@ -174,13 +227,14 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', authenticateToken, async (req, res) => {
-    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description } = req.body;
+    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory } = req.body;
     const newId = id || 'p_' + Date.now().toString(36);
     const added = Date.now();
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const { error } = await supabase.from('products').insert([{
-        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description
+        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description,
+        inventory: inventory != null ? parseInt(inventory, 10) : 0
     }]);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -188,11 +242,12 @@ app.post('/api/products', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/products/:id', authenticateToken, async (req, res) => {
-    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description } = req.body;
+    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory } = req.body;
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const { error } = await supabase.from('products').update({
-        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description
+        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description,
+        inventory: inventory != null ? parseInt(inventory, 10) : 0
     }).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -315,6 +370,38 @@ app.get('/api/stats', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// --- LANDING PAGES ---
+app.get('/api/landing-pages', async (req, res) => {
+    const { data, error } = await supabase.from('landing_pages').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.post('/api/landing-pages', authenticateToken, async (req, res) => {
+    const { id, title, short_description, image, products } = req.body;
+    const newId = id || 'lp_' + Date.now().toString(36);
+    const { error } = await supabase.from('landing_pages').insert([{
+        id: newId, title, short_description, image, products: products || []
+    }]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: newId, ...req.body });
+});
+
+app.put('/api/landing-pages/:id', authenticateToken, async (req, res) => {
+    const { title, short_description, image, products } = req.body;
+    const { error } = await supabase.from('landing_pages').update({
+        title, short_description, image, products: products || []
+    }).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: req.params.id, ...req.body });
+});
+
+app.delete('/api/landing-pages/:id', authenticateToken, async (req, res) => {
+    const { error } = await supabase.from('landing_pages').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
 });
 
 module.exports = app;
