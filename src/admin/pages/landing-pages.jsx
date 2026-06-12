@@ -113,7 +113,13 @@ function AdminLandingPages({ toast }) {
           API.products.getAll()
         ]);
         const lp = await lpRes.json();
-        setLandingPages(lp);
+        if (lp.error || !Array.isArray(lp)) {
+            console.error('Landing pages fetch error:', lp);
+            setLandingPages([]);
+            toast('Warning: Could not load landing pages (Table might be missing)', 'error');
+        } else {
+            setLandingPages(lp);
+        }
         setAllProducts(p);
     } catch(e) {
         toast('Failed to load landing pages', 'error');
@@ -200,7 +206,7 @@ function AdminLandingPages({ toast }) {
                   <button className="btn btn-gold btn-sm" onClick={() => { setEditItem(null); setShowForm(true); }}><AIcon.Plus /> Create page</button>
                 </div>
               </td></tr>
-            ) : landingPages.map(lp => (
+            ) : Array.isArray(landingPages) && landingPages.map(lp => (
               <tr key={lp.id}>
                 <td className="col-thumb">
                   {lp.image ? <img src={lp.image} className="thumb-img" style={{ width: 60 }} alt="" /> : <div className="thumb-ph">Img</div>}

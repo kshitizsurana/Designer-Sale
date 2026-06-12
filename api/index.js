@@ -375,8 +375,12 @@ app.get('/api/stats', async (req, res) => {
 // --- LANDING PAGES ---
 app.get('/api/landing-pages', async (req, res) => {
     const { data, error } = await supabase.from('landing_pages').select('*');
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+    if (error) {
+        console.error('landing_pages error:', error.message);
+        // Return empty array so the UI doesn't crash (table may not exist yet)
+        return res.json([]);
+    }
+    res.json(data || []);
 });
 
 app.post('/api/landing-pages', authenticateToken, async (req, res) => {

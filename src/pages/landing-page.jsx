@@ -26,6 +26,12 @@ function LandingPage() {
         const landingPages = await lpRes.json();
         const allProducts = await pRes.json();
 
+        // Guard against unexpected server responses
+        if (!Array.isArray(landingPages)) {
+          setError('Service unavailable. Please try again later.');
+          return;
+        }
+
         // Find the page by slug (derive slug from title)
         const match = landingPages.find(lp => lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug);
         
