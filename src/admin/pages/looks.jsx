@@ -185,7 +185,7 @@ function AdminLooks({ toast }) {
             {loading ? <tr><td colSpan="5" style={{textAlign: 'center', padding: 30}}>Loading...</td></tr> : filtered.length === 0 ? (
               <tr><td colSpan="5">
                 <div className="admin-empty">
-                  <div className="admin-empty-icon"><AIcon.Category /></div>
+                  <div className="admin-empty-icon"><AIcon.Looks /></div>
                   <h3>No looks found</h3>
                   <p>Start by adding your first style profile.</p>
                   <button className="btn btn-gold btn-sm" onClick={() => { setEditItem(null); setShowForm(true); }}><AIcon.Plus /> Add look</button>
