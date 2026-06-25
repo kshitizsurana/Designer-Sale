@@ -27,18 +27,23 @@ window.DS_DATA = (() => {
   ];
 
   const boutiques = [
-    { id: 'blue-bungalow',   name: 'Blue Bungalow',          state: 'QLD', city: 'Noosa Heads',  online: true,  inStore: true,  items: 87, focus: 'Resort & holiday' },
-    { id: 'pizazz',          name: 'Pizazz Boutique',        state: 'VIC', city: 'Armadale',     online: true,  inStore: true,  items: 124, focus: 'Occasion & evening' },
-    { id: 'the-edit-paddo',  name: 'The Edit Paddington',    state: 'NSW', city: 'Paddington',   online: true,  inStore: true,  items: 56, focus: 'Contemporary' },
-    { id: 'silk-and-stone',  name: 'Silk & Stone',           state: 'NSW', city: 'Mosman',       online: true,  inStore: true,  items: 39, focus: 'Silk specialists' },
-    { id: 'driftwood',       name: 'Driftwood Byron',        state: 'NSW', city: 'Byron Bay',    online: true,  inStore: true,  items: 71, focus: 'Bohemian luxe' },
-    { id: 'hayman-edit-co',  name: 'Hayman Edit Co.',        state: 'QLD', city: 'Brisbane',     online: true,  inStore: false, items: 92, focus: 'Designer resale' },
-    { id: 'south-yarra',     name: 'South Yarra Atelier',    state: 'VIC', city: 'South Yarra',  online: true,  inStore: true,  items: 110, focus: 'Tailoring & coats' },
-    { id: 'cottesloe',       name: 'Cottesloe & Co.',        state: 'WA',  city: 'Cottesloe',    online: true,  inStore: true,  items: 44, focus: 'Coastal contemporary' },
-    { id: 'kingston-lane',   name: 'Kingston Lane',          state: 'ACT', city: 'Kingston',     online: false, inStore: true,  items: 28, focus: 'Curated capsule' },
-    { id: 'north-adelaide',  name: 'North Adelaide Edit',    state: 'SA',  city: 'North Adelaide', online: true, inStore: true, items: 51, focus: 'Workwear & every-day' },
-    { id: 'hobart-house',    name: 'Hobart House',           state: 'TAS', city: 'Battery Point', online: true, inStore: true,  items: 22, focus: 'Knitwear & wool' },
-    { id: 'darwin-trader',   name: 'The Darwin Trader',      state: 'NT',  city: 'Darwin',       online: true,  inStore: true,  items: 18, focus: 'Resort & tropical' },
+    { id: 'calexico',            name: 'Calexico',                state: 'QLD', city: 'Fortitude Valley', online: true,  inStore: true,  items: 87,  focus: 'International luxury & styling', look_id: 1 },
+    { id: 'parlour-x',          name: 'Parlour X',               state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 124, focus: 'High-end luxury & avant-garde', look_id: 1 },
+    { id: 'byfreer',            name: 'byfreer',                 state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 56,  focus: 'Everyday luxury & European fabrics', look_id: 1 },
+    { id: 'grace-melbourne',    name: 'GRACE Melbourne',         state: 'VIC', city: 'Toorak',           online: true,  inStore: true,  items: 39,  focus: 'Luxury classics & tailoring', look_id: 1 },
+    { id: 'the-standard-store', name: 'The Standard Store',      state: 'NSW', city: 'Surry Hills',      online: true,  inStore: true,  items: 71,  focus: 'Independent streetwear & lifestyle', look_id: 3 },
+    { id: 'qurated',            name: 'qurated',                 state: 'NSW', city: 'Surry Hills',      online: true,  inStore: true,  items: 92,  focus: 'Niche designer labels', look_id: 2 },
+    { id: 'hansen-and-gretel',  name: 'Hansen & Gretel',         state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 110, focus: 'Contemporary prints & styling', look_id: 3 },
+    { id: 'duchess-boutique',   name: 'Duchess Boutique',        state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 44,  focus: 'Evening gowns & occasion wear', look_id: 1 },
+    { id: 'riada-concept',      name: 'Riada Concept',           state: 'NSW', city: 'Woollahra',        online: true,  inStore: true,  items: 28,  focus: 'Curated luxury & European design', look_id: 1 },
+    { id: 'koriah',             name: 'Koriah',                  state: 'NSW', city: 'Sydney CBD',       online: true,  inStore: false, items: 51,  focus: 'Emerging Asian designers', look_id: 3 },
+    { id: 'mode-sportif',       name: 'Mode Sportif',            state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 22,  focus: 'Resort wear & relaxed luxury', look_id: 2 },
+    { id: 'flannel',            name: 'Flannel',                 state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 18,  focus: 'Bohemian-luxe essentials', look_id: 2 },
+    { id: 'aquel-boutique',     name: 'Aquel Boutique',          state: 'NSW', city: 'Woollahra',        online: true,  inStore: true,  items: 35,  focus: 'Hand-selected ready-to-wear', look_id: 1 },
+    { id: 'elysian-collective', name: 'Elysian Collective',      state: 'NSW', city: 'Narrabeen',        online: true,  inStore: true,  items: 62,  focus: 'Casual & colourful fashion', look_id: 3 },
+    { id: 'st-agni',            name: 'St. Agni',                state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 48,  focus: 'Minimalist formal wear', look_id: 1 },
+    { id: 'viktoria-and-woods', name: 'Viktoria & Woods',        state: 'NSW', city: 'Paddington',       online: true,  inStore: true,  items: 73,  focus: 'Premium tailored smart casual', look_id: 1 },
+    { id: 'store-moss',         name: 'Store Moss',              state: 'NSW', city: 'Sydney',           online: true,  inStore: false, items: 30,  focus: 'Streetwear & tailored fit', look_id: 3 },
   ];
 
   // Product titles intentionally evocative-but-original.

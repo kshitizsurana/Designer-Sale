@@ -48,7 +48,7 @@ function AdminBulkUpload({ toast }) {
 
   function downloadTemplate() {
     const headers = 'title,brandId,merchantId,category,rrp,sale,sizes,image,description\n';
-    const row = 'Bias-Cut Silk Slip,fashion-spectrum,blue-bungalow,maxi-dresses,350,245,"S, M, L",https://example.com/img.jpg,Stunning silk dress\n';
+    const row = 'Bias-Cut Silk Slip,fashion-spectrum,calexico,maxi-dresses,350,245,"S, M, L",https://example.com/img.jpg,Stunning silk dress\n';
     const blob = new Blob([headers + row], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

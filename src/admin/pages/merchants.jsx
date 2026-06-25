@@ -41,7 +41,7 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
           <div className="admin-modal-body">
             <div className="form-group">
               <label className="form-label">Boutique name <span>*</span></label>
-              <input className={`form-input ${errors.name ? 'error' : ''}`} value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="e.g. Blue Bungalow" />
+              <input className={`form-input ${errors.name ? 'error' : ''}`} value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="e.g. Parlour X" />
               {errors.name && <div className="form-error">{errors.name}</div>}
             </div>
             <div className="form-row">
