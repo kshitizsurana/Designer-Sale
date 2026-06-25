@@ -1,83 +1,98 @@
+-- ============================================================
+-- DesignerSale.com.au — Supabase Schema (run in SQL Editor)
+-- ============================================================
+-- Run this entire file in one go in the Supabase SQL Editor.
+-- Existing tables are left untouched (IF NOT EXISTS).
+-- ============================================================
+
+-- Looks table (must be created FIRST — referenced by merchants and products)
+CREATE TABLE IF NOT EXISTS looks (
+  id         INTEGER PRIMARY KEY,
+  name       TEXT    NOT NULL,
+  slug       TEXT    NOT NULL UNIQUE,
+  description TEXT,
+  hero_image  TEXT,
+  status      TEXT    DEFAULT 'active',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Seed the three default looks
+INSERT INTO looks (id, name, slug, description, hero_image, status)
+VALUES
+  (1, 'Formal Wear', 'formal-wear',  'Tailored fits, office wear, and sophisticated styles for young professionals.',       'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?auto=format&fit=crop&q=80&w=800', 'active'),
+  (2, 'Bohemian',    'bohemian',     'Boho chic, floral patterns, and earthy relaxed styles for an effortless look.',       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800', 'active'),
+  (3, 'Casuals',     'casuals',      'Baggy fits, everyday casual wear, and structured basics for teens and young adults.',  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800', 'active')
+ON CONFLICT (id) DO NOTHING;
+
 -- Users table
-CREATE TABLE users (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS users (
+  id       TEXT PRIMARY KEY,
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL
 );
 
 -- Categories table
-CREATE TABLE categories (
-  id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS categories (
+  id    TEXT PRIMARY KEY,
   label TEXT NOT NULL
 );
 
 -- Brands table
-CREATE TABLE brands (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS brands (
+  id          TEXT PRIMARY KEY,
+  name        TEXT NOT NULL,
   description TEXT,
-  website TEXT,
-  founded TEXT,
-  country TEXT
+  website     TEXT,
+  founded     TEXT,
+  country     TEXT
 );
 
 -- Merchants table
-CREATE TABLE merchants (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  state TEXT,
-  city TEXT,
-  online BOOLEAN DEFAULT false,
-  inStore BOOLEAN DEFAULT false,
-  focus TEXT,
-  email TEXT,
-  phone TEXT,
-  website TEXT,
-  description TEXT,
-  facebook TEXT,
-  instagram TEXT,
+CREATE TABLE IF NOT EXISTS merchants (
+  id                  TEXT PRIMARY KEY,
+  name                TEXT NOT NULL,
+  state               TEXT,
+  city                TEXT,
+  online              BOOLEAN DEFAULT false,
+  instore             BOOLEAN DEFAULT false,
+  focus               TEXT,
+  email               TEXT,
+  phone               TEXT,
+  website             TEXT,
+  description         TEXT,
+  facebook            TEXT,
+  instagram           TEXT,
   best_contact_method TEXT,
-  look_id INTEGER REFERENCES looks(id)
+  look_id             INTEGER REFERENCES looks(id)
 );
 
 -- Products table
-CREATE TABLE products (
-  id TEXT PRIMARY KEY,
-  category TEXT,
-  title TEXT NOT NULL,
-  brandId TEXT REFERENCES brands(id),
-  merchantId TEXT REFERENCES merchants(id),
-  rrp REAL NOT NULL,
-  sale REAL NOT NULL,
-  discountPct INTEGER,
-  newIn BOOLEAN DEFAULT false,
-  sizes JSONB,
-  image TEXT,
-  added BIGINT,
+CREATE TABLE IF NOT EXISTS products (
+  id          TEXT PRIMARY KEY,
+  category    TEXT,
+  title       TEXT NOT NULL,
+  brandid     TEXT REFERENCES brands(id),
+  merchantid  TEXT REFERENCES merchants(id),
+  rrp         REAL NOT NULL,
+  sale        REAL NOT NULL,
+  discountpct INTEGER,
+  newin       BOOLEAN DEFAULT false,
+  sizes       JSONB,
+  image       TEXT,
+  added       BIGINT,
   description TEXT,
-  inventory INTEGER DEFAULT 0,
-  look_id INTEGER REFERENCES looks(id)
-);
-
--- Looks table
-CREATE TABLE looks (
-  id INTEGER PRIMARY KEY,
-  name TEXT NOT NULL,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT,
-  hero_image TEXT,
-  status TEXT DEFAULT 'active',
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  inventory   INTEGER DEFAULT 0,
+  look_id     INTEGER REFERENCES looks(id)
 );
 
 -- Landing Pages table
-CREATE TABLE landing_pages (
-  id TEXT PRIMARY KEY,
-  title TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS landing_pages (
+  id                TEXT PRIMARY KEY,
+  title             TEXT NOT NULL,
   short_description TEXT,
-  image TEXT,
-  products JSONB DEFAULT '[]'::jsonb,
-  look_id INTEGER REFERENCES looks(id),
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  image             TEXT,
+  products          JSONB DEFAULT '[]'::jsonb,
+  look_id           INTEGER REFERENCES looks(id),
+  created_at        TIMESTAMPTZ DEFAULT NOW()
 );
