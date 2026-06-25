@@ -2,7 +2,8 @@
 // Wraps fetch calls to the real Node.js backend.
 
 (function () {
-    const API_BASE = '/api';
+    const isLocalStatic = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000';
+    const API_BASE = isLocalStatic ? 'https://designer-sale.vercel.app/api' : '/api';
 
     function getAuthToken() {
         try {
