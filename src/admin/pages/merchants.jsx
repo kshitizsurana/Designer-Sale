@@ -7,7 +7,7 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
   const [form, setForm] = useMState(merchant || {
     name: '', city: '', state: '', focus: '', email: '', phone: '',
     website: '', description: '', online: true, inStore: true,
-    facebook: '', instagram: '', bestContactMethod: 'email'
+    facebook: '', instagram: '', bestContactMethod: 'email', look_id: ''
   });
   const [errors, setErrors] = useMState({});
 
@@ -66,6 +66,13 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
             <div className="form-group">
               <label className="form-label">Description</label>
               <textarea className="form-input" rows="3" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Brief description of the boutique..." style={{ resize: 'vertical' }} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Fashion Look</label>
+              <select className="form-input admin-select" value={form.look_id || ''} onChange={e => set('look_id', parseInt(e.target.value) || '')}>
+                <option value="">Select a look...</option>
+                {window._adminLooks?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
             </div>
             <div className="form-row">
               <div className="form-group">
@@ -205,6 +212,7 @@ function MerchantBulkUploadModal({ onClose, onComplete }) {
 function AdminMerchants({ toast }) {
   const [merchants, setMerchants] = useMState([]);
   const [products, setProducts] = useMState([]);
+  const [looks, setLooks] = useMState([]);
   const [q, setQ] = useMState('');
   const [stateFilter, setStateFilter] = useMState('all');
   const [channelFilter, setChannelFilter] = useMState('all');
@@ -217,9 +225,11 @@ function AdminMerchants({ toast }) {
   async function refresh() {
     setLoading(true);
     try {
-        const [m, p] = await Promise.all([API.merchants.getAll(), API.products.getAll()]);
+        const [m, p, l] = await Promise.all([API.merchants.getAll(), API.products.getAll(), API.looks.getAll()]);
         setMerchants(m);
         setProducts(p);
+        setLooks(l);
+        window._adminLooks = l; // Global hack for the modal to access looks easily
     } catch(e) {
         toast('Failed to load merchants', 'error');
     } finally {

@@ -1,7 +1,7 @@
 /* global React, ReactDOM,
    Header, Footer,
    HomePage, CategoryPage, BoutiquesPage, AboutPage, WishlistPage,
-   ProductDetailPage, BrandPage, MerchantPage, LandingPage,
+   ProductDetailPage, BrandPage, MerchantPage, LandingPage, LookPage,
    TweaksPanel, useTweaks, TweakSection, TweakRadio, TweakSelect, TweakColor, TweakToggle, API */
 
 const { useState, useEffect } = React;
@@ -25,11 +25,12 @@ function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [categories, merchants, brands, products] = await Promise.all([
+        const [categories, merchants, brands, products, looks] = await Promise.all([
           API.categories.getAll(),
           API.merchants.getAll(),
           API.brands.getAll(),
-          API.products.getAll()
+          API.products.getAll(),
+          API.looks.getAll()
         ]);
 
         const categoryExtras = {
@@ -68,6 +69,7 @@ function App() {
           categories: enrichedCategories,
           merchants,
           brands,
+          looks: looks || [],
           products: enrichedProducts,
           justAdded: enrichedProducts
             .slice()
@@ -113,7 +115,9 @@ function App() {
     else if (page === 'product')   hash = `#/product/${entityId}`;
     else if (page === 'brand')     hash = `#/brand/${entityId}`;
     else if (page === 'merchant')  hash = `#/merchant/${entityId}`;
+    else if (page === 'look')      hash = `#/looks/${entityId}`;
     else if (page === 'landing-page') hash = `#/landing-page/${entityId}`;
+    else if (page === 'collection') hash = `#/collections/${entityId}`;
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (window.location.hash !== hash) window.location.hash = hash;
     else setRoute(parseHash());
@@ -189,7 +193,9 @@ function App() {
       {route.page === 'product'   && <ProductDetailPage {...commonProps} productId={route.entityId} />}
       {route.page === 'brand'     && <BrandPage {...commonProps} brandId={route.entityId} />}
       {route.page === 'merchant'  && <MerchantPage {...commonProps} merchantId={route.entityId} />}
+      {route.page === 'look'      && <LookPage {...commonProps} lookSlug={route.entityId} />}
       {route.page === 'landing-page' && <LandingPage />}
+      {route.page === 'collection' && <LandingPage collectionSlug={route.entityId} />}
 
       <Footer onNav={navigate} categories={data.categories} />
 
@@ -275,7 +281,9 @@ function parseHash() {
   if (path.startsWith('/product/'))  return { page: 'product',   categoryId: null, entityId: path.slice(9) };
   if (path.startsWith('/brand/'))    return { page: 'brand',     categoryId: null, entityId: path.slice(7) };
   if (path.startsWith('/merchant/')) return { page: 'merchant',  categoryId: null, entityId: path.slice(10) };
+  if (path.startsWith('/looks/'))    return { page: 'look',      categoryId: null, entityId: path.slice(7) };
   if (path.startsWith('/landing-page/')) return { page: 'landing-page', categoryId: null, entityId: path.slice(14) };
+  if (path.startsWith('/collections/')) return { page: 'collection', categoryId: null, entityId: path.slice(13) };
   if (path === '/boutiques')         return { page: 'boutiques', categoryId: null, entityId: null };
   if (path === '/about')             return { page: 'about',     categoryId: null, entityId: null };
   if (path === '/wishlist')          return { page: 'wishlist',  categoryId: null, entityId: null };

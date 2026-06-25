@@ -36,7 +36,8 @@ CREATE TABLE merchants (
   description TEXT,
   facebook TEXT,
   instagram TEXT,
-  best_contact_method TEXT
+  best_contact_method TEXT,
+  look_id INTEGER REFERENCES looks(id)
 );
 
 -- Products table
@@ -54,7 +55,20 @@ CREATE TABLE products (
   image TEXT,
   added BIGINT,
   description TEXT,
-  inventory INTEGER DEFAULT 0
+  inventory INTEGER DEFAULT 0,
+  look_id INTEGER REFERENCES looks(id)
+);
+
+-- Looks table
+CREATE TABLE looks (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  description TEXT,
+  hero_image TEXT,
+  status TEXT DEFAULT 'active',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Landing Pages table
@@ -64,5 +78,6 @@ CREATE TABLE landing_pages (
   short_description TEXT,
   image TEXT,
   products JSONB DEFAULT '[]'::jsonb,
+  look_id INTEGER REFERENCES looks(id),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );

@@ -42,8 +42,12 @@ function LandingPage() {
 
         setPageData(match);
 
-        // Filter products that are in the match.products array
-        const tagged = allProducts.filter(p => match.products && match.products.includes(p.id));
+        // Filter products that are in the match.products array or match the look_id
+        const tagged = allProducts.filter(p => {
+          if (match.products && match.products.includes(p.id)) return true;
+          if (match.look_id && p.look_id === match.look_id) return true;
+          return false;
+        });
         setProducts(tagged);
       } catch(e) {
         setError(e.message);

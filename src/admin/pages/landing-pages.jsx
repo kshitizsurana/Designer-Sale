@@ -4,7 +4,7 @@ const { useState, useEffect, useMemo } = React;
 
 function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
   const [form, setForm] = useState(landingPage || {
-    title: '', short_description: '', image: '', products: []
+    title: '', short_description: '', image: '', products: [], look_id: ''
   });
   const [errors, setErrors] = useState({});
   const [q, setQ] = useState('');
@@ -48,7 +48,7 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
             <div className="form-group">
               <label className="form-label">URL Slug / Title <span>*</span></label>
               <input className={`form-input ${errors.title ? 'error' : ''}`} value={form.title || ''} onChange={e => set('title', e.target.value)} placeholder="e.g. July Sales" />
-              <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Used for the URL: #/landing-page/<strong>{form.title ? form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'july-sales'}</strong></p>
+              <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Used for the URL: #/collections/<strong>{form.title ? form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'july-sales'}</strong></p>
               {errors.title && <div className="form-error">{errors.title}</div>}
             </div>
             
@@ -60,6 +60,14 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
             <div className="form-group">
               <label className="form-label">Short Description</label>
               <textarea className="form-input" rows="2" value={form.short_description || ''} onChange={e => set('short_description', e.target.value)} placeholder="Summer clearance up to 50% off..." style={{ resize: 'vertical' }} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Fashion Look</label>
+              <select className="form-input admin-select" value={form.look_id || ''} onChange={e => set('look_id', parseInt(e.target.value) || '')} style={{ appearance: 'auto' }}>
+                <option value="">Select a look...</option>
+                {window._adminLooks?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
             </div>
 
             <div className="form-group" style={{ marginTop: 24 }}>
@@ -99,6 +107,7 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
 function AdminLandingPages({ toast }) {
   const [landingPages, setLandingPages] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [looks, setLooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -108,9 +117,10 @@ function AdminLandingPages({ toast }) {
     setLoading(true);
     try {
         const token = localStorage.getItem('ds_token');
-        const [lpRes, p] = await Promise.all([
-          fetch('https://designer-sale.vercel.app/api/landing-pages', { headers: { 'Authorization': `Bearer ${token}` } }),
-          API.products.getAll()
+        const [lpRes, p, l] = await Promise.all([
+          fetch('/api/landing-pages', { headers: { 'Authorization': `Bearer ${token}` } }),
+          API.products.getAll(),
+          API.looks.getAll()
         ]);
         const lp = await lpRes.json();
         if (lp.error || !Array.isArray(lp)) {
@@ -121,6 +131,8 @@ function AdminLandingPages({ toast }) {
             setLandingPages(lp);
         }
         setAllProducts(p);
+        setLooks(l);
+        window._adminLooks = l;
     } catch(e) {
         toast('Failed to load landing pages', 'error');
     } finally {
@@ -213,7 +225,7 @@ function AdminLandingPages({ toast }) {
                 </td>
                 <td>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>{lp.title}</div>
-                  <a href={`/#/landing-page/${lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} target="_blank" style={{ fontSize: 11, color: 'var(--gold-deep)', textDecoration: 'none' }}>View Page ↗</a>
+                  <a href={`/#/collections/${lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} target="_blank" style={{ fontSize: 11, color: 'var(--gold-deep)', textDecoration: 'none' }}>View Page ↗</a>
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 200 }}>
                   {lp.short_description || 'No description'}

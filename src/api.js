@@ -51,6 +51,14 @@
             }
         },
 
+        // ---- Looks ----
+        looks: {
+            getAll: () => fetchAPI('/looks'),
+            create: (data) => fetchAPI('/looks', { method: 'POST', body: data }),
+            update: (id, data) => fetchAPI(`/looks/${id}`, { method: 'PUT', body: data }),
+            delete: (id) => fetchAPI(`/looks/${id}`, { method: 'DELETE' }),
+        },
+
         // ---- Categories ----
         categories: {
             getAll: () => fetchAPI('/categories')

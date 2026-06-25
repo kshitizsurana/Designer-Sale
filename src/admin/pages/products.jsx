@@ -6,7 +6,7 @@ const { useState: usePState, useEffect: usePEffect, useMemo: useMemo_P } = React
 function ProductFormModal({ product, categories, merchants, brands, onSave, onClose }) {
   const [form, setForm] = usePState(product || {
     title: '', category: 'maxi-dresses', merchantId: merchants[0]?.id || '', brandId: brands[0]?.id || '',
-    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', inventory: 0
+    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', inventory: 0, look_id: ''
   });
   const [sizeInput, setSizeInput] = usePState('');
   const [errors, setErrors] = usePState({});
@@ -90,6 +90,13 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
                 </select>
                 {errors.merchantId && <div className="form-error">{errors.merchantId}</div>}
               </div>
+              <div className="form-group">
+                <label className="form-label">Fashion Look</label>
+                <select className="form-input admin-select" value={form.look_id || ''} onChange={e => set('look_id', parseInt(e.target.value) || '')} style={{ appearance: 'auto' }}>
+                  <option value="">Inherit from merchant</option>
+                  {window._adminLooks?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </div>
             </div>
 
             <div className="form-row-3">
@@ -162,6 +169,7 @@ function AdminProducts({ toast }) {
   const [categories, setCategories] = usePState([]);
   const [merchants, setMerchants] = usePState([]);
   const [brands, setBrands] = usePState([]);
+  const [looks, setLooks] = usePState([]);
   const [loading, setLoading] = usePState(true);
 
   const [q, setQ] = usePState('');
@@ -178,16 +186,19 @@ function AdminProducts({ toast }) {
   async function refresh() {
     setLoading(true);
     try {
-        const [p, c, m, b] = await Promise.all([
+        const [p, c, m, b, l] = await Promise.all([
             API.products.getAll(),
             API.categories.getAll(),
             API.merchants.getAll(),
-            API.brands.getAll()
+            API.brands.getAll(),
+            API.looks.getAll()
         ]);
         setProducts(p);
         setCategories(c);
         setMerchants(m);
         setBrands(b);
+        setLooks(l);
+        window._adminLooks = l;
     } catch(e) {
         toast('Failed to load products', 'error');
     } finally {

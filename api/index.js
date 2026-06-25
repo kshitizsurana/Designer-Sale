@@ -65,6 +65,47 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+// --- LOOKS (Public Read, Protected Write) ---
+app.get('/api/looks', async (req, res) => {
+    const { data, error } = await supabase.from('looks').select('*');
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+});
+
+app.post('/api/looks', authenticateToken, async (req, res) => {
+    const { name, slug, description, hero_image, status } = req.body;
+    
+    // Auto-generate ID if none provided by looking at max id
+    let id = req.body.id;
+    if (!id) {
+        const { data: allLooks } = await supabase.from('looks').select('id');
+        const maxId = (allLooks && allLooks.length > 0) ? Math.max(...allLooks.map(l => l.id)) : 0;
+        id = maxId + 1;
+    }
+    
+    const { error } = await supabase.from('looks').insert([{
+        id, name, slug, description, hero_image, status: status || 'active', updated_at: new Date().toISOString()
+    }]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id, name, slug, description, hero_image, status: status || 'active' });
+});
+
+app.put('/api/looks/:id', authenticateToken, async (req, res) => {
+    const { name, slug, description, hero_image, status } = req.body;
+    const { error } = await supabase.from('looks').update({
+        name, slug, description, hero_image, status, updated_at: new Date().toISOString()
+    }).eq('id', req.params.id);
+    
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: parseInt(req.params.id), ...req.body });
+});
+
+app.delete('/api/looks/:id', authenticateToken, async (req, res) => {
+    const { error } = await supabase.from('looks').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
+});
+
 // --- CATEGORIES (Public) ---
 app.get('/api/categories', async (req, res) => {
     const { data, error } = await supabase.from('categories').select('*');
@@ -87,22 +128,22 @@ app.get('/api/merchants', async (req, res) => {
 });
 
 app.post('/api/merchants', authenticateToken, async (req, res) => {
-    const { id, name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod } = req.body;
+    const { id, name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id } = req.body;
     const newId = id || 'm_' + Date.now().toString(36);
     
     const { error } = await supabase.from('merchants').insert([{
         id: newId, name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description,
-        facebook, instagram, best_contact_method: bestContactMethod
+        facebook, instagram, best_contact_method: bestContactMethod, look_id
     }]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/merchants/:id', authenticateToken, async (req, res) => {
-    const { name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod } = req.body;
+    const { name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id } = req.body;
     const { error } = await supabase.from('merchants').update({
         name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description,
-        facebook, instagram, best_contact_method: bestContactMethod
+        facebook, instagram, best_contact_method: bestContactMethod, look_id
     }).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -227,14 +268,14 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', authenticateToken, async (req, res) => {
-    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory } = req.body;
+    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory, look_id } = req.body;
     const newId = id || 'p_' + Date.now().toString(36);
     const added = Date.now();
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const { error } = await supabase.from('products').insert([{
         id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description,
-        inventory: inventory != null ? parseInt(inventory, 10) : 0
+        inventory: inventory != null ? parseInt(inventory, 10) : 0, look_id
     }]);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -242,12 +283,12 @@ app.post('/api/products', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/products/:id', authenticateToken, async (req, res) => {
-    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory } = req.body;
+    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory, look_id } = req.body;
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const { error } = await supabase.from('products').update({
         category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description,
-        inventory: inventory != null ? parseInt(inventory, 10) : 0
+        inventory: inventory != null ? parseInt(inventory, 10) : 0, look_id
     }).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -384,19 +425,19 @@ app.get('/api/landing-pages', async (req, res) => {
 });
 
 app.post('/api/landing-pages', authenticateToken, async (req, res) => {
-    const { id, title, short_description, image, products } = req.body;
+    const { id, title, short_description, image, products, look_id } = req.body;
     const newId = id || 'lp_' + Date.now().toString(36);
     const { error } = await supabase.from('landing_pages').insert([{
-        id: newId, title, short_description, image, products: products || []
+        id: newId, title, short_description, image, products: products || [], look_id
     }]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/landing-pages/:id', authenticateToken, async (req, res) => {
-    const { title, short_description, image, products } = req.body;
+    const { title, short_description, image, products, look_id } = req.body;
     const { error } = await supabase.from('landing_pages').update({
-        title, short_description, image, products: products || []
+        title, short_description, image, products: products || [], look_id
     }).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: req.params.id, ...req.body });

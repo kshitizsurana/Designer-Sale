@@ -7,6 +7,12 @@
 
   // ---- Seed Data ----------------------------------------------------------------
 
+  const SEED_LOOKS = [
+    { id: 1, name: 'Formal Wear', slug: 'formal-wear', description: 'Tailored fits, office wear, and sophisticated styles for young professionals.', hero_image: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?auto=format&fit=crop&q=80&w=800', status: 'active', created_at: Date.now(), updated_at: Date.now() },
+    { id: 2, name: 'Bohemian', slug: 'bohemian', description: 'Boho chic, floral patterns, and earthy relaxed styles for an effortless look.', hero_image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800', status: 'active', created_at: Date.now(), updated_at: Date.now() },
+    { id: 3, name: 'Casuals', slug: 'casuals', description: 'Baggy fits, everyday casual wear, and structured basics for teens and young adults.', hero_image: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800', status: 'active', created_at: Date.now(), updated_at: Date.now() }
+  ];
+
   const SEED_CATEGORIES = [
     { id: 'maxi-dresses',     label: 'Maxi Dresses',       count: 412, swatch: ['#C9B8A8', '#A8854A'], image: I.catMaxi },
     { id: 'kaftans',          label: 'Kaftans',            count: 186, swatch: ['#E8D9C4', '#7A6450'], image: I.catKaftan },
@@ -99,6 +105,8 @@
       const sale = Math.round(rrp * (100 - discountPct) / 100 / 5) * 5;
       const brandId = brandIds[(i * 3 + startId) % brandIds.length];
       const merchantId = merchantIds[(i * 5 + startId) % merchantIds.length];
+      const merchant = SEED_MERCHANTS.find(m => m.id === merchantId);
+      const look_id = merchant ? merchant.look_id : 1;
       const title = titles[i % titles.length];
       const newIn = (i % 7 === 0);
       const hue = 18 + ((i * 37) % 40);
@@ -106,6 +114,7 @@
       const image = pool[i % pool.length];
       out.push({
         id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn,
+        look_id,
         sizes: ['XS', 'S', 'M', 'L', 'XL'].filter((_, idx) => (i + idx) % 4 !== 0),
         placeholder: { hue, lightness }, image,
         added: Date.now() - (n - i) * 3600000,
@@ -133,6 +142,7 @@
   function seed() {
     if (load('seeded')) return; // already seeded
 
+    save('looks', SEED_LOOKS);
     save('categories', SEED_CATEGORIES);
     save('brands', SEED_BRANDS);
     save('merchants', SEED_MERCHANTS);
@@ -158,6 +168,29 @@
     // ---- Categories (read-only from UI) ----
     categories: {
       getAll() { return load('categories') || SEED_CATEGORIES; },
+    },
+
+    // ---- Looks ----
+    looks: {
+      getAll()       { return load('looks') || []; },
+      get(id)        { return (load('looks') || []).find(l => l.id == id) || null; },
+      create(data)   {
+        const looks = load('looks') || [];
+        const nextId = Math.max(0, ...looks.map(l => l.id)) + 1;
+        const l = { ...data, id: data.id || nextId };
+        looks.push(l);
+        save('looks', looks);
+        return l;
+      },
+      update(id, data) {
+        const looks = (load('looks') || []).map(l => l.id == id ? { ...l, ...data, id } : l);
+        save('looks', looks);
+        return looks.find(l => l.id == id);
+      },
+      delete(id) {
+        const looks = (load('looks') || []).filter(l => l.id != id);
+        save('looks', looks);
+      },
     },
 
     // ---- Merchants ----
