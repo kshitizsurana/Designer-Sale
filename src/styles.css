@@ -1946,4 +1946,17 @@ h3 {
     padding: 14px;
     margin-top: 8px;
   }
+
+  /* ---- LookPage responsive ---- */
+  .look-boutique-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .look-explore-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .look-editorial-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
