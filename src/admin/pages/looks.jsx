@@ -85,7 +85,27 @@ function AdminLooks({ toast }) {
   async function refresh() {
     setLoading(true);
     try {
-        const [l, m, p] = await Promise.all([API.looks.getAll(), API.merchants.getAll(), API.products.getAll()]);
+        const [l, mRaw, pRaw] = await Promise.all([API.looks.getAll(), API.merchants.getAll(), API.products.getAll()]);
+        
+        // Hardcode look_ids since the column isn't in Supabase yet
+        const merchantLookMapping = {
+          'calexico': 1, 'parlour-x': 1, 'byfreer': 1, 'grace-melbourne': 1, 'duchess-boutique': 1, 'riada-concept': 1, 'aquel-boutique': 1, 'st-agni': 1, 'viktoria-and-woods': 1,
+          'qurated': 2, 'mode-sportif': 2, 'flannel': 2,
+          'the-standard-store': 3, 'hansen-and-gretel': 3, 'koriah': 3, 'elysian-collective': 3, 'store-moss': 3
+        };
+
+        const m = mRaw.map(merchant => ({
+          ...merchant,
+          look_id: merchantLookMapping[merchant.id] || null
+        }));
+
+        const mLookup = Object.fromEntries(m.map(x => [x.id, x.look_id]));
+
+        const p = pRaw.map(prod => ({
+          ...prod,
+          look_id: prod.look_id || mLookup[prod.merchantId] || null
+        }));
+
         setLooks(l);
         setMerchants(m);
         setProducts(p);
