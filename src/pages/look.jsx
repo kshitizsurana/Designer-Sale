@@ -409,7 +409,8 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
                     )}
-                    <div style={{ position: 'absolute', inset: 0, background: oCfg.palette ? oCfg.palette.hero : 'linear-gradient(to top,rgba(0,0,0,0.8) 0%,transparent 60%)', opacity: l.hero_image ? 1 : 0.9 }} />
+                    <div style={{ position: 'absolute', inset: 0, background: oCfg.palette ? oCfg.palette.hero : '#000', opacity: l.hero_image ? 0.45 : 0.9, mixBlendMode: 'multiply' }} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, textAlign: 'left', color: '#fff' }}>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: oCfg.palette ? oCfg.palette.accent : 'var(--gold-soft)', marginBottom: 8 }}>Shop by Style</div>
                       <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, marginBottom: 8, lineHeight: 1.1 }}>{l.name}</h3>
