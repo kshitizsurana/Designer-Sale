@@ -60,6 +60,15 @@
             delete: (id) => fetchAPI(`/looks/${id}`, { method: 'DELETE' }),
         },
 
+        // ---- Collections ----
+        collections: {
+            getAll: () => fetchAPI('/collections'),
+            create: (data) => fetchAPI('/collections', { method: 'POST', body: data }),
+            update: (id, data) => fetchAPI(`/collections/${id}`, { method: 'PUT', body: data }),
+            delete: (id) => fetchAPI(`/collections/${id}`, { method: 'DELETE' }),
+            updateProducts: (id, product_ids) => fetchAPI(`/collections/${id}/products`, { method: 'PUT', body: { product_ids } }),
+        },
+
         // ---- Categories ----
         categories: {
             getAll: () => fetchAPI('/categories')

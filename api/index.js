@@ -106,6 +106,67 @@ app.delete('/api/looks/:id', authenticateToken, async (req, res) => {
     res.json({ success: true, deletedId: req.params.id });
 });
 
+// --- COLLECTIONS (Public & Admin) ---
+app.get('/api/collections', async (req, res) => {
+    const { data: collections, error: cErr } = await supabase.from('collections').select('*').order('display_order', { ascending: true });
+    if (cErr) return res.status(500).json({ error: cErr.message });
+    
+    const { data: cpData, error: cpErr } = await supabase.from('collection_products').select('*');
+    if (cpErr) return res.status(500).json({ error: cpErr.message });
+    
+    const result = collections.map(c => ({
+        ...c,
+        product_ids: cpData.filter(cp => cp.collection_id === c.id).sort((a, b) => a.display_order - b.display_order).map(cp => cp.product_id)
+    }));
+    res.json(result);
+});
+
+app.post('/api/collections', authenticateToken, async (req, res) => {
+    const { look_id, title, slug, hero_image, description, seo_title, seo_description, display_order, status } = req.body;
+    const { data, error } = await supabase.from('collections').insert([{
+        look_id, title, slug, hero_image, description, seo_title, seo_description, display_order, status
+    }]).select();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ...data[0], product_ids: [] });
+});
+
+app.put('/api/collections/:id', authenticateToken, async (req, res) => {
+    const { look_id, title, slug, hero_image, description, seo_title, seo_description, display_order, status } = req.body;
+    const { error } = await supabase.from('collections').update({
+        look_id, title, slug, hero_image, description, seo_title, seo_description, display_order, status, updated_at: new Date().toISOString()
+    }).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: parseInt(req.params.id), ...req.body });
+});
+
+app.delete('/api/collections/:id', authenticateToken, async (req, res) => {
+    const { error } = await supabase.from('collections').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
+});
+
+app.put('/api/collections/:id/products', authenticateToken, async (req, res) => {
+    const collection_id = parseInt(req.params.id);
+    const { product_ids } = req.body; // Array of product IDs
+    
+    // 1. Delete existing mappings
+    const { error: delErr } = await supabase.from('collection_products').delete().eq('collection_id', collection_id);
+    if (delErr) return res.status(500).json({ error: delErr.message });
+    
+    // 2. Insert new mappings
+    if (product_ids && product_ids.length > 0) {
+        const inserts = product_ids.map((pid, idx) => ({
+            collection_id,
+            product_id: pid,
+            display_order: idx
+        }));
+        const { error: insErr } = await supabase.from('collection_products').insert(inserts);
+        if (insErr) return res.status(500).json({ error: insErr.message });
+    }
+    
+    res.json({ success: true });
+});
+
 // --- CATEGORIES (Public) ---
 app.get('/api/categories', async (req, res) => {
     const { data, error } = await supabase.from('categories').select('*');

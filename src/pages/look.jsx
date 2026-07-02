@@ -78,30 +78,12 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   const allLookProducts = data.products.filter(p => p.look_id === look.id);
   const lookMerchants = data.merchants.filter(m => m.look_id === look.id);
 
-  // Derive unique categories within this look
-  const categories = useLookMemo(() => {
-    const cats = {};
-    allLookProducts.forEach(p => { if (p.category) cats[p.category] = (cats[p.category] || 0) + 1; });
-    return Object.entries(cats).map(([id, count]) => {
-      const cat = data.categories.find(c => c.id === id);
-      return { id, label: cat ? cat.label : id, count };
-    }).sort((a, b) => b.count - a.count);
-  }, [allLookProducts, data.categories]);
-
-  // Filter by category then sort
-  const filteredProducts = useLookMemo(() => {
-    let prods = activeCategory === 'all' ? [...allLookProducts] : allLookProducts.filter(p => p.category === activeCategory);
-    if (sort === 'discount') prods.sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
-    else if (sort === 'new') prods.sort((a, b) => (b.newIn ? 1 : 0) - (a.newIn ? 1 : 0) || (b.added || 0) - (a.added || 0));
-    else if (sort === 'price-asc') prods.sort((a, b) => (a.sale || 0) - (b.sale || 0));
-    else if (sort === 'price-desc') prods.sort((a, b) => (b.sale || 0) - (a.sale || 0));
-    return prods;
-  }, [allLookProducts, activeCategory, sort]);
-
-  const visibleProducts = showAll ? filteredProducts : filteredProducts.slice(0, 12);
-  const topDeals = [...allLookProducts].sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0)).slice(0, 4);
-  const newIn = [...allLookProducts].filter(p => p.newIn).slice(0, 4);
-  const hasMore = filteredProducts.length > 12;
+  // Derive active collections for this look
+  const lookCollections = useLookMemo(() => {
+    return (data.collections || [])
+      .filter(c => c.look_id === look.id && c.status !== 'hidden')
+      .sort((a, b) => a.display_order - b.display_order);
+  }, [data.collections, look.id]);
 
   const otherLooks = data.looks.filter(l => l.id !== look.id);
 
@@ -209,50 +191,46 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
       )}
 
       {/* ════════════════════════════════
-          TOP DEALS — up to 4 highest-discount items
+          CURATED COLLECTIONS
       ════════════════════════════════ */}
-      {topDeals.length > 0 && (
-        <section className="section container-wide">
-          <div className="section-head">
-            <div>
-              <div className="eyebrow" style={{ marginBottom: 10 }}>Best deals right now</div>
-              <h2>Top Discounts in <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>{look.name}</em></h2>
-            </div>
-            <button className="section-head-link" onClick={() => { setActiveCategory('all'); setSort('discount'); document.getElementById('look-products')?.scrollIntoView({ behavior: 'smooth' }); }}>
-              View all deals
-            </button>
-          </div>
-          <div className="product-grid">
-            {topDeals.map(p => (
-              <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
-            ))}
-          </div>
+      {lookCollections.length === 0 ? (
+        <section className="section container-wide" style={{ textAlign: 'center', padding: '120px 20px', color: 'var(--ink-muted)' }}>
+          <p>No collections have been curated for this style yet.</p>
         </section>
-      )}
-
-      {/* ════════════════════════════════
-          NEW IN — if any flagged as new
-      ════════════════════════════════ */}
-      {newIn.length > 0 && (
-        <>
-          <hr className="divider-rule" />
-          <section className="section container-wide">
-            <div className="section-head">
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>Just dropped · last 48 hours</div>
-                <h2>New In <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>{look.name}</em></h2>
-              </div>
-              <button className="section-head-link" onClick={() => { setActiveCategory('all'); setSort('new'); document.getElementById('look-products')?.scrollIntoView({ behavior: 'smooth' }); }}>
-                All new arrivals
-              </button>
-            </div>
-            <div className="product-grid">
-              {newIn.map(p => (
-                <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
-              ))}
-            </div>
-          </section>
-        </>
+      ) : (
+        lookCollections.map((collection, idx) => {
+          // Resolve products for this collection
+          const pids = collection.product_ids || [];
+          const pMap = new Map(data.products.map(p => [p.id, p]));
+          const prods = pids.map(id => pMap.get(id)).filter(Boolean);
+  
+          if (prods.length === 0) return null;
+  
+          return (
+            <React.Fragment key={collection.id}>
+              {idx > 0 && <hr className="divider-rule" />}
+              <section className="section container-wide">
+                <div className="section-head">
+                  <div>
+                    <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Collection</div>
+                    <h2>{collection.title}</h2>
+                    {collection.description && (
+                      <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{collection.description}</p>
+                    )}
+                  </div>
+                  <button className="section-head-link" onClick={() => onNav('collection', look.slug, null, collection.slug)}>
+                    View All {prods.length} <Icon.ArrowRight />
+                  </button>
+                </div>
+                <div className="product-grid">
+                  {prods.slice(0, 8).map(p => (
+                    <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
+                  ))}
+                </div>
+              </section>
+            </React.Fragment>
+          );
+        })
       )}
 
       {/* ════════════════════════════════
@@ -304,77 +282,6 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
         </div>
       </section>
 
-      {/* ════════════════════════════════
-          FULL PRODUCT GRID — filterable / sortable
-      ════════════════════════════════ */}
-      <section id="look-products" className="section container-wide">
-        <div className="section-head">
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 10 }}>Complete Collection</div>
-            <h2>All <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>{look.name}</em> Sales</h2>
-          </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-muted)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            {filteredProducts.length} item{filteredProducts.length !== 1 ? 's' : ''}
-          </div>
-        </div>
-
-        {/* Filter + Sort toolbar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 28, paddingBottom: 20, borderBottom: '1px solid var(--line)' }}>
-          {/* Category tabs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            <button
-              onClick={() => setActiveCategory('all')}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '6px 14px', cursor: 'pointer', border: '1px solid', borderRadius: 2, borderColor: activeCategory === 'all' ? 'var(--ink)' : 'var(--line)', background: activeCategory === 'all' ? 'var(--ink)' : 'transparent', color: activeCategory === 'all' ? 'var(--bg)' : 'var(--ink-soft)', transition: 'all 150ms ease' }}
-            >
-              All ({allLookProducts.length})
-            </button>
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '6px 14px', cursor: 'pointer', border: '1px solid', borderRadius: 2, borderColor: activeCategory === cat.id ? 'var(--ink)' : 'var(--line)', background: activeCategory === cat.id ? 'var(--ink)' : 'transparent', color: activeCategory === cat.id ? 'var(--bg)' : 'var(--ink-soft)', transition: 'all 150ms ease' }}
-              >
-                {cat.label} ({cat.count})
-              </button>
-            ))}
-          </div>
-
-          {/* Sort dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Sort:</span>
-            <select
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-              style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '6px 12px', border: '1px solid var(--line)', background: 'var(--bg-elevated)', color: 'var(--ink)', cursor: 'pointer', outline: 'none', borderRadius: 2 }}
-            >
-              {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {filteredProducts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 'var(--pad-2xl) 0' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 32, color: 'var(--ink-soft)', marginBottom: 12 }}>No products found</div>
-            <p style={{ color: 'var(--ink-muted)', marginBottom: 24 }}>Try a different category or check back soon for new arrivals.</p>
-            <button className="btn btn-outline btn-sm" onClick={() => setActiveCategory('all')}>Show all categories</button>
-          </div>
-        ) : (
-          <>
-            <div className="product-grid">
-              {visibleProducts.map(p => (
-                <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
-              ))}
-            </div>
-            {hasMore && !showAll && (
-              <div style={{ textAlign: 'center', marginTop: 48 }}>
-                <button className="btn btn-outline" onClick={() => setShowAll(true)}>
-                  Show all {filteredProducts.length} items
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </section>
 
       {/* ════════════════════════════════
           EXPLORE OTHER LOOKS

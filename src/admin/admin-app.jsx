@@ -22,6 +22,7 @@ const AIcon = {
   Alert: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
   External: () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
   Looks: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12A10 10 0 1 1 12 2a10 10 0 0 1 10 10z" /><circle cx="12" cy="10" r="3" /><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" /></svg>,
+  Collections: () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
 };
 window.AIcon = AIcon;
 
@@ -129,13 +130,14 @@ function AdminApp() {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', Icon: AIcon.Dashboard },
     { id: 'looks', label: 'Looks', Icon: AIcon.Looks },
+    { id: 'collections', label: 'Collections', Icon: AIcon.Collections },
     { id: 'merchants', label: 'Merchants', Icon: AIcon.Merchants, count: stats.totalMerchants },
     { id: 'brands',   label: 'Brands',    Icon: AIcon.Brands,    count: stats.totalBrands },
     { id: 'products', label: 'Products',  Icon: AIcon.Products,  count: stats.totalProducts },
     { id: 'landing-pages', label: 'Landing Pages', Icon: AIcon.LandingPages },
   ];
 
-  const pageTitles = { dashboard: 'Dashboard', looks: 'Looks', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages' };
+  const pageTitles = { dashboard: 'Dashboard', looks: 'Looks', collections: 'Collections', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages' };
 
   return (
     <div className="admin-shell">
@@ -182,6 +184,7 @@ function AdminApp() {
         <div className="admin-content">
           {page === 'dashboard' && <AdminDashboard onNav={setPage} toast={showToast} />}
           {page === 'looks' && <AdminLooks toast={showToast} />}
+          {page === 'collections' && <AdminCollections toast={showToast} />}
           {page === 'merchants' && <AdminMerchants toast={showToast} />}
           {page === 'brands'   && <AdminBrands toast={showToast} />}
           {page === 'products' && <AdminProducts toast={showToast} />}
