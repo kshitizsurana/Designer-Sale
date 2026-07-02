@@ -47,19 +47,30 @@ function App() {
           return { ...c, ...ext, count: products.filter(p => p.category === c.id).length };
         });
 
-        // Enrich products — API JOIN already sets brand/merchant names; add brandSlug, placeholder, merchantData
+        // Hardcode look_ids for merchants since the column isn't in Supabase yet
+        const merchantLookMapping = {
+          'calexico': 1, 'parlour-x': 1, 'byfreer': 1, 'grace-melbourne': 1, 'duchess-boutique': 1, 'riada-concept': 1, 'aquel-boutique': 1, 'st-agni': 1, 'viktoria-and-woods': 1,
+          'qurated': 2, 'mode-sportif': 2, 'flannel': 2,
+          'the-standard-store': 3, 'hansen-and-gretel': 3, 'koriah': 3, 'elysian-collective': 3, 'store-moss': 3
+        };
+
+        const enrichedMerchants = merchants.map(m => ({
+          ...m,
+          look_id: merchantLookMapping[m.id] || null
+        }));
+
         const brandMap = Object.fromEntries(brands.map(b => [b.id, b]));
-        const merchantMap = Object.fromEntries(merchants.map(m => [m.id, m]));
+        const merchantMap = Object.fromEntries(enrichedMerchants.map(m => [m.id, m]));
 
         const enrichedProducts = products.map((p, i) => {
-          const merchant = merchantMap[p.merchantId] || { name: p.merchant || p.merchantId || 'Unknown', id: p.merchantId };
+          const merchant = merchantMap[p.merchantId] || { name: p.merchant || p.merchantId || 'Unknown', id: p.merchantId, look_id: null };
           const hue = 18 + ((i * 37) % 40);
           const lightness = 78 + ((i * 11) % 14);
           return {
             ...p,
-            // brand name already comes from SQL JOIN as p.brand
             brandSlug: p.brandId,
             merchantData: merchant,
+            look_id: p.look_id || merchant.look_id, // Inherit look from merchant
             placeholder: p.placeholder || { hue, lightness },
             sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (p.sizes || []),
           };
@@ -67,7 +78,7 @@ function App() {
 
         setData({
           categories: enrichedCategories,
-          merchants,
+          merchants: enrichedMerchants,
           brands,
           looks: looks || [],
           products: enrichedProducts,
@@ -163,7 +174,28 @@ function App() {
     if (email) pushToast(`Subscribed: ${email}`);
   }
 
-  if (loading) return <div style={{ padding: '100px', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' }}>Loading data...</div>;
+  if (loading) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--bg)', zIndex: 9999, color: 'var(--ink)'
+      }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 4vw, 36px)', letterSpacing: '-0.02em', marginBottom: 24, animation: 'pulse 2s infinite ease-in-out' }}>
+          Designer Sale
+        </div>
+        <div style={{ width: 140, height: 1, background: 'var(--line-strong)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, background: 'var(--gold)', animation: 'progress 1.5s infinite ease-in-out', width: '40%' }} />
+        </div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--ink-soft)', marginTop: 24 }}>
+          Curating Collections
+        </div>
+        <style>{`
+          @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+          @keyframes progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+        `}</style>
+      </div>
+    );
+  }
   if (error) return <div style={{ padding: '100px', textAlign: 'center', color: 'red' }}>Error loading data: {error}</div>;
 
   const commonProps = {
