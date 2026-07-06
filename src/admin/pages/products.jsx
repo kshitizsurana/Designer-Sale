@@ -70,13 +70,13 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
             <div className="form-row-3">
               <div className="form-group">
                 <label className="form-label">Category <span>*</span></label>
-                <select className="form-input" value={form.category} onChange={e => set('category', e.target.value)} style={{ appearance: 'auto' }}>
+                <select className="form-input" value={form.category || ''} onChange={e => set('category', e.target.value)} style={{ appearance: 'auto' }}>
                   {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                 </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Brand <span>*</span></label>
-                <select className={`form-input ${errors.brandId ? 'error' : ''}`} value={form.brandId} onChange={e => set('brandId', e.target.value)} style={{ appearance: 'auto' }}>
+                <select className={`form-input ${errors.brandId ? 'error' : ''}`} value={form.brandId || ''} onChange={e => set('brandId', e.target.value)} style={{ appearance: 'auto' }}>
                   <option value="">Select brand...</option>
                   {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
@@ -84,7 +84,7 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
               </div>
               <div className="form-group">
                 <label className="form-label">Merchant <span>*</span></label>
-                <select className={`form-input ${errors.merchantId ? 'error' : ''}`} value={form.merchantId} onChange={e => set('merchantId', e.target.value)} style={{ appearance: 'auto' }}>
+                <select className={`form-input ${errors.merchantId ? 'error' : ''}`} value={form.merchantId || ''} onChange={e => set('merchantId', e.target.value)} style={{ appearance: 'auto' }}>
                   <option value="">Select merchant...</option>
                   {merchants.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
