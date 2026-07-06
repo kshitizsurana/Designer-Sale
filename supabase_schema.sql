@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS landing_pages (
   image             TEXT,
   products          JSONB DEFAULT '[]'::jsonb,
   look_id           INTEGER REFERENCES looks(id),
+  status            TEXT DEFAULT 'published',
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
 

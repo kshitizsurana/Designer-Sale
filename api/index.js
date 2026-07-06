@@ -486,19 +486,19 @@ app.get('/api/landing-pages', async (req, res) => {
 });
 
 app.post('/api/landing-pages', authenticateToken, async (req, res) => {
-    const { id, title, short_description, image, products, look_id } = req.body;
+    const { id, title, short_description, image, products, look_id, status } = req.body;
     const newId = id || 'lp_' + Date.now().toString(36);
     const { error } = await supabase.from('landing_pages').insert([{
-        id: newId, title, short_description, image, products: products || [], look_id
+        id: newId, title, short_description, image, products: products || [], look_id, status: status || 'published'
     }]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/landing-pages/:id', authenticateToken, async (req, res) => {
-    const { title, short_description, image, products, look_id } = req.body;
+    const { title, short_description, image, products, look_id, status } = req.body;
     const { error } = await supabase.from('landing_pages').update({
-        title, short_description, image, products: products || [], look_id
+        title, short_description, image, products: products || [], look_id, status: status || 'published'
     }).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: req.params.id, ...req.body });

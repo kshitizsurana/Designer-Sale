@@ -4,7 +4,7 @@ const { useState, useEffect, useMemo } = React;
 
 function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
   const [form, setForm] = useState(landingPage || {
-    title: '', short_description: '', image: '', products: [], look_id: ''
+    title: '', short_description: '', image: '', products: [], look_id: '', status: 'published'
   });
   const [errors, setErrors] = useState({});
   const [q, setQ] = useState('');
@@ -67,6 +67,14 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
               <select className="form-input admin-select" value={form.look_id || ''} onChange={e => set('look_id', parseInt(e.target.value) || '')} style={{ appearance: 'auto' }}>
                 <option value="">Select a look...</option>
                 {window._adminLooks?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-input" value={form.status || 'published'} onChange={e => set('status', e.target.value)}>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
 
@@ -206,12 +214,13 @@ function AdminLandingPages({ toast }) {
               <th>Title</th>
               <th>Description</th>
               <th>Tagged Products</th>
+              <th>Status</th>
               <th className="col-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {loading ? <tr><td colSpan="5" style={{textAlign: 'center', padding: 30}}>Loading...</td></tr> : landingPages.length === 0 ? (
-              <tr><td colSpan="5">
+            {loading ? <tr><td colSpan="6" style={{textAlign: 'center', padding: 30}}>Loading...</td></tr> : landingPages.length === 0 ? (
+              <tr><td colSpan="6">
                 <div className="admin-empty">
                   <h3>No landing pages yet</h3>
                   <p>Create a curated collection page to feature specific items.</p>
@@ -232,6 +241,15 @@ function AdminLandingPages({ toast }) {
                 </td>
                 <td>
                   <span className="badge badge-muted">{lp.products?.length || 0} products</span>
+                </td>
+                <td>
+                  <span style={{ 
+                    padding: '2px 6px', borderRadius: 4, fontSize: 10, textTransform: 'uppercase', 
+                    background: lp.status === 'published' ? '#d4edda' : '#f8d7da',
+                    color: lp.status === 'published' ? '#155724' : '#721c24'
+                  }}>
+                    {lp.status || 'published'}
+                  </span>
                 </td>
                 <td className="col-actions">
                   <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>

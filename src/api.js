@@ -74,6 +74,19 @@
             getAll: () => fetchAPI('/categories')
         },
 
+        landingPages: {
+            getAll: () => fetchAPI('/landing-pages'),
+            create: (data) => fetchAPI('/landing-pages', { method: 'POST', body: data }),
+            update: (id, data) => fetchAPI(`/landing-pages/${id}`, { method: 'PUT', body: data }),
+            delete: (id) => fetchAPI(`/landing-pages/${id}`, { method: 'DELETE' }),
+        },
+
+        // ---- Settings ----
+        settings: {
+            getAll: () => fetchAPI('/settings'),
+            update: (updates) => fetchAPI('/settings', { method: 'PUT', body: updates }),
+        },
+
         // ---- Merchants ----
         merchants: {
             getAll: () => fetchAPI('/merchants'),

@@ -25,13 +25,14 @@ function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [categories, merchants, brands, products, looks, collections] = await Promise.all([
+        const [categories, merchants, brands, products, looks, collections, landing_pages] = await Promise.all([
           API.categories.getAll(),
           API.merchants.getAll(),
           API.brands.getAll(),
           API.products.getAll(),
           API.looks.getAll(),
-          API.collections.getAll().catch(() => []) // Fallback in case of error/unmigrated DB
+          API.collections.getAll().catch(() => []), // Fallback in case of error/unmigrated DB
+          API.landingPages.getAll().catch(() => [])
         ]);
 
         const categoryExtras = {
@@ -83,6 +84,7 @@ function App() {
           brands,
           looks: looks || [],
           collections: collections || [],
+          landing_pages: landing_pages || [],
           products: enrichedProducts,
           justAdded: enrichedProducts
             .slice()
