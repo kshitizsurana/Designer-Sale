@@ -132,12 +132,12 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
 
       <hr className="divider-rule" />
 
-      {/* ---- Featured Sales (Landing Pages) ---- */}
+      {/* ---- Featured Sales (Landing Pages as Styles) ---- */}
       {data.landing_pages && data.landing_pages.filter(lp => lp.status !== 'archived').length > 0 && (
         <section className="section container-wide">
           <div className="section-head" style={{ textAlign: 'center', display: 'block', marginBottom: 40 }}>
-            <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Sales</div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Shop Featured Sales.</h2>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Collections</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Shop By Style.</h2>
           </div>
           <div className="tile-grid" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(280px, 1fr))` }}>
             {data.landing_pages.filter(lp => lp.status !== 'archived').map((lp, i) => (
@@ -168,7 +168,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 8 }}>{lp.title}</h3>
                   <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 16 }}>{lp.short_description}</p>
                   <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    Shop Sale <Icon.ArrowRight />
+                    View Collection <Icon.ArrowRight />
                   </span>
                 </div>
               </button>

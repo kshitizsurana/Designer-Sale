@@ -155,12 +155,10 @@ function ProductDetailPage({ productId, data, cardVariant, wishlist, onToggleWis
                   className="btn btn-gold"
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => {
-                    if (merchant && merchant.website) {
-                      const [mId, handle] = product.id.split('__');
-                      let url = merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`;
-                      if (handle) {
-                        url = `${url.replace(/\/$/, '')}/products/${handle}`;
-                      }
+                    if (product.url) {
+                      window.open(product.url, '_blank');
+                    } else if (merchant && merchant.website) {
+                      const url = merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`;
                       window.open(url, '_blank');
                     } else {
                       alert(`Redirecting to ${product.merchant} website...`);

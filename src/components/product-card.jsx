@@ -15,9 +15,7 @@ function ProductCard({ product, variant = 'editorial', isWishlisted, onToggleWis
   function clickCard(e) {
     e.stopPropagation();
     e.preventDefault();
-    if (product.url) {
-      window.open(product.url, '_blank', 'noopener,noreferrer');
-    } else if (onNav) {
+    if (onNav) {
       onNav('product', null, null, product.id);
     } else if (onShop) {
       onShop(product);
