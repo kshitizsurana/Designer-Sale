@@ -179,30 +179,6 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
 
       <hr className="divider-rule" />
 
-      {/* ---- Just added ---- */}
-      <section className="section container-wide">
-        <div className="section-head">
-          <div>
-            <div className="eyebrow" style={{ marginBottom: 10 }}>Just added · last 48 hours</div>
-            <h2>Fresh from the<br/><em className="serif-it">boutique floors.</em></h2>
-          </div>
-          <a className="section-head-link" href="#/" onClick={(e)=>{e.preventDefault();onNav('category','maxi-dresses');}}>See everything new</a>
-        </div>
-        <div className="product-grid">
-          {data.justAdded.slice(0, 8).map(p => (
-            <ProductCard
-              key={p.id}
-              product={p}
-              variant={cardVariant}
-              isWishlisted={wishlist.has(p.id)}
-              onToggleWishlist={onToggleWishlist}
-              onShop={onShop}
-              onNav={onNav}
-            />
-          ))}
-        </div>
-      </section>
-
       {/* ---- Featured boutiques strip ---- */}
       <section className="container-wide" style={{ paddingBottom: 'var(--pad-xl)' }}>
         <div className="eyebrow" style={{ textAlign: 'center', margin: '0 0 24px' }}>

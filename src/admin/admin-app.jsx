@@ -104,9 +104,47 @@ function AdminLogin({ onLogin }) {
 // ---- Main admin shell ----
 function AdminApp() {
   const [authed, setAuthed] = useAdminState(API.auth.isLoggedIn());
-  const [page, setPage] = useAdminState('dashboard');
+  const [page, setPage] = useAdminState(() => {
+    let pathPage = '';
+    if (window.location.pathname.startsWith('/admin/')) {
+      pathPage = window.location.pathname.replace('/admin/', '');
+    }
+    const hash = window.location.hash.replace(/^#\/?/, '');
+    return pathPage || hash || 'dashboard';
+  });
   const [toast, setToast] = useAdminState(null);
   const [stats, setStats] = useAdminState({});
+
+  // Sync state to URL
+  useAdminEffect(() => {
+    if (window.location.pathname.startsWith('/admin')) {
+      const target = `/admin/${page}`;
+      if (window.location.pathname !== target) {
+        window.history.pushState(null, '', target);
+      }
+    } else if (window.location.hash !== `#/${page}`) {
+      window.location.hash = `/${page}`;
+    }
+  }, [page]);
+
+  // Sync URL to state (for browser back/forward)
+  useAdminEffect(() => {
+    const onPopState = () => {
+      let pathPage = '';
+      if (window.location.pathname.startsWith('/admin/')) {
+        pathPage = window.location.pathname.replace('/admin/', '');
+      }
+      const hash = window.location.hash.replace(/^#\/?/, '');
+      const newPage = pathPage || hash || 'dashboard';
+      if (newPage !== page) setPage(newPage);
+    };
+    window.addEventListener('popstate', onPopState);
+    window.addEventListener('hashchange', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+      window.removeEventListener('hashchange', onPopState);
+    };
+  }, [page]);
 
   function showToast(msgOrObj, type = 'success') {
     // Accept both showToast('text') and showToast({ type, msg })

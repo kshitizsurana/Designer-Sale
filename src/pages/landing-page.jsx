@@ -44,6 +44,7 @@ function LandingPage() {
 
         // Filter products that are in the match.products array or match the look_id
         const tagged = allProducts.filter(p => {
+          if (match.title.includes('Fresh')) return p.newIn;
           if (match.products && match.products.includes(p.id)) return true;
           if (match.look_id && p.look_id === match.look_id) return true;
           return false;

@@ -6,6 +6,10 @@
       "destination": "/DesignerSale Standalone Source.html"
     },
     {
+      "source": "/admin/:match*",
+      "destination": "/admin.html"
+    },
+    {
       "source": "/admin",
       "destination": "/admin.html"
     },
