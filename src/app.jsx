@@ -49,16 +49,9 @@ function App() {
           return { ...c, ...ext, count: products.filter(p => p.category === c.id).length };
         });
 
-        // Hardcode look_ids for merchants since the column isn't in Supabase yet
-        const merchantLookMapping = {
-          'calexico': 1, 'parlour-x': 1, 'byfreer': 1, 'grace-melbourne': 1, 'duchess-boutique': 1, 'riada-concept': 1, 'aquel-boutique': 1, 'st-agni': 1, 'viktoria-and-woods': 1,
-          'qurated': 2, 'mode-sportif': 2, 'flannel': 2,
-          'the-standard-store': 3, 'hansen-and-gretel': 3, 'koriah': 3, 'elysian-collective': 3, 'store-moss': 3
-        };
-
         const enrichedMerchants = merchants.map(m => ({
           ...m,
-          look_id: merchantLookMapping[m.id] || null
+          look_id: m.look_id || null
         }));
 
         const brandMap = Object.fromEntries(brands.map(b => [b.id, b]));

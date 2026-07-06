@@ -31,6 +31,11 @@
         try { data = JSON.parse(text); } catch(e) { data = { error: text || res.statusText }; }
 
         if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+                try { localStorage.removeItem('ds_admin_token'); localStorage.removeItem('ds_admin_auth'); } catch(e){}
+                window.location.reload();
+                return;
+            }
             throw new Error(data.error || `HTTP Error ${res.status}`);
         }
         return data;
