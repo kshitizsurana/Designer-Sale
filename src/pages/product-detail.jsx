@@ -156,7 +156,12 @@ function ProductDetailPage({ productId, data, cardVariant, wishlist, onToggleWis
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => {
                     if (merchant && merchant.website) {
-                      window.open(merchant.website, '_blank');
+                      const [mId, handle] = product.id.split('__');
+                      let url = merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`;
+                      if (handle) {
+                        url = `${url.replace(/\/$/, '')}/products/${handle}`;
+                      }
+                      window.open(url, '_blank');
                     } else {
                       alert(`Redirecting to ${product.merchant} website...`);
                     }

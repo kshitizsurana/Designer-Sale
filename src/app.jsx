@@ -58,11 +58,19 @@ function App() {
         const merchantMap = Object.fromEntries(enrichedMerchants.map(m => [m.id, m]));
 
         const enrichedProducts = products.map((p, i) => {
-          const merchant = merchantMap[p.merchantId] || { name: p.merchant || p.merchantId || 'Unknown', id: p.merchantId, look_id: null };
+          const merchant = merchantMap[p.merchantId] || { name: p.merchant || p.merchantId || 'Unknown', id: p.merchantId, look_id: null, website: '' };
           const hue = 18 + ((i * 37) % 40);
           const lightness = 78 + ((i * 11) % 14);
+          
+          let url = merchant.website ? (merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`) : '';
+          const handle = p.id.includes('__') ? p.id.split('__')[1] : null;
+          if (url && handle) {
+            url = `${url.replace(/\/$/, '')}/products/${handle}`;
+          }
+
           return {
             ...p,
+            url,
             brandSlug: p.brandId,
             merchantData: merchant,
             look_id: p.look_id || merchant.look_id, // Inherit look from merchant

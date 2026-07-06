@@ -164,7 +164,8 @@ function transformProduct(shopifyProduct, boutique, merchantId) {
     .filter(s => ['XS','S','M','L','XL','XXL','6','8','10','12','14','16','18'].includes(s))
     .slice(0, 6);
 
-  const safeId = `${boutique.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${shopifyProduct.id}`;
+  const handle = shopifyProduct.handle || shopifyProduct.id;
+  const safeId = `${merchantId}__${handle}`;
 
   return {
     id: safeId,
