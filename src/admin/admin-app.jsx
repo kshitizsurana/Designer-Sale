@@ -105,45 +105,42 @@ function AdminLogin({ onLogin }) {
 function AdminApp() {
   const [authed, setAuthed] = useAdminState(API.auth.isLoggedIn());
   const [page, setPage] = useAdminState(() => {
-    let pathPage = '';
-    const path = window.location.pathname.replace(/^\//, '');
     const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
-    
-    if (window.location.pathname.startsWith('/admin/')) {
-      pathPage = window.location.pathname.replace('/admin/', '');
-    } else if (validPages.includes(path)) {
-      pathPage = path;
+    const path = window.location.pathname;
+    // Support /admin, /admin/, /admin/collections, etc.
+    if (path === '/admin' || path === '/admin/') return 'dashboard';
+    if (path.startsWith('/admin/')) {
+      const sub = path.replace('/admin/', '').replace(/\/$/, '');
+      if (validPages.includes(sub)) return sub;
     }
-    
+    // Fallback: hash-based (legacy)
     const hash = window.location.hash.replace(/^#\/?/, '');
-    return pathPage || hash || 'dashboard';
+    if (validPages.includes(hash)) return hash;
+    return 'dashboard';
   });
   const [toast, setToast] = useAdminState(null);
   const [stats, setStats] = useAdminState({});
 
-  // Sync state to URL
+  // Sync state to URL — always /admin/<page>
   useAdminEffect(() => {
-    const target = `/${page}`;
+    const target = `/admin/${page}`;
     if (window.location.pathname !== target) {
       window.history.pushState(null, '', target);
     }
   }, [page]);
 
-  // Sync URL to state (for browser back/forward)
+  // Sync URL to state (browser back/forward)
   useAdminEffect(() => {
     const onPopState = () => {
-      let pathPage = '';
-      const path = window.location.pathname.replace(/^\//, '');
       const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
-      
-      if (window.location.pathname.startsWith('/admin/')) {
-        pathPage = window.location.pathname.replace('/admin/', '');
-      } else if (validPages.includes(path)) {
-        pathPage = path;
+      const path = window.location.pathname;
+      let newPage = 'dashboard';
+      if (path === '/admin' || path === '/admin/') {
+        newPage = 'dashboard';
+      } else if (path.startsWith('/admin/')) {
+        const sub = path.replace('/admin/', '').replace(/\/$/, '');
+        if (validPages.includes(sub)) newPage = sub;
       }
-      
-      const hash = window.location.hash.replace(/^#\/?/, '');
-      const newPage = pathPage || hash || 'dashboard';
       if (newPage !== page) setPage(newPage);
     };
     window.addEventListener('popstate', onPopState);
