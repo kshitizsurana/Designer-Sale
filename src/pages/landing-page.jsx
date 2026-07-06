@@ -1,114 +1,109 @@
-/* global React, ProductCard, AIcon */
+/* global React, ProductCard, Icon */
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useMemo } = React;
 
-function LandingPage() {
-  const [pageData, setPageData] = useState(null);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+function LandingPage({ landingPageId, data, wishlist, onToggleWishlist, onShop, onNav, cardVariant }) {
+  const pageData = useMemo(() => {
+    if (!data?.landing_pages) return null;
+    return data.landing_pages.find(lp => lp.id === landingPageId) || null;
+  }, [data, landingPageId]);
 
-  // Parse the slug from the hash URL: #/landing-page/slug
-  const slug = window.location.hash.split('/').pop();
+  const products = useMemo(() => {
+    if (!pageData || !data?.products) return [];
+    return data.products.filter(p => {
+      if (pageData.products && pageData.products.includes(p.id)) return true;
+      if (pageData.look_id && p.look_id === pageData.look_id) return true;
+      return false;
+    });
+  }, [pageData, data]);
 
-  useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [lpRes, pRes] = await Promise.all([
-          fetch('https://designer-sale.vercel.app/api/landing-pages'),
-          fetch('https://designer-sale.vercel.app/api/products')
-        ]);
-        
-        if (!lpRes.ok || !pRes.ok) throw new Error('Failed to fetch data');
-        
-        const landingPages = await lpRes.json();
-        const allProducts = await pRes.json();
-
-        // Guard against unexpected server responses
-        if (!Array.isArray(landingPages)) {
-          setError('Service unavailable. Please try again later.');
-          return;
-        }
-
-        // Find the page by slug (derive slug from title)
-        const match = landingPages.find(lp => lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') === slug);
-        
-        if (!match) {
-          setError('Page not found');
-          return;
-        }
-
-        setPageData(match);
-
-        // Filter products that are in the match.products array or match the look_id
-        const tagged = allProducts.filter(p => {
-          if (match.title.includes('Fresh')) return p.newIn;
-          if (match.products && match.products.includes(p.id)) return true;
-          if (match.look_id && p.look_id === match.look_id) return true;
-          return false;
-        });
-        setProducts(tagged);
-      } catch(e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [slug]);
-
-  if (loading) {
+  if (!data) {
     return <div className="page" style={{ display: 'flex', justifyContent: 'center', padding: 100, color: 'var(--ink-soft)' }}>Loading...</div>;
   }
 
-  if (error) {
+  if (!pageData) {
     return (
       <div className="page" style={{ padding: 100, textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, marginBottom: 16 }}>{error}</h2>
-        <a href="#/" className="btn btn-outline">Back to Home</a>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, marginBottom: 16 }}>Sale not found.</h2>
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 32 }}>This curated sale may have ended or moved.</p>
+        <button className="btn btn-ink" onClick={() => onNav('home')}>Back to Home</button>
       </div>
     );
   }
 
-  if (!pageData) return null;
-
   return (
     <div className="page landing-page">
       {/* Hero Banner */}
-      <div className="hero" style={{ padding: '60px 20px', textAlign: 'center', background: 'var(--blush)', position: 'relative', overflow: 'hidden' }}>
+      <section style={{
+        position: 'relative',
+        minHeight: 480,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        background: 'var(--ink)'
+      }}>
         {pageData.image && (
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: `url(${pageData.image})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.3 }} />
+          <img
+            src={pageData.image}
+            alt={pageData.title}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover', opacity: 0.5
+            }}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
+          />
         )}
-        <div style={{ position: 'relative', zIndex: 1, maxWidth: 800, margin: '0 auto' }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(40px, 6vw, 64px)', color: 'var(--ink-deep)', margin: '0 0 16px 0', lineHeight: 1.1 }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.7) 100%)' }} />
+        <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', color: '#fff', padding: '60px 24px', maxWidth: 800 }}>
+          <div className="eyebrow" style={{ color: 'var(--gold-soft)', marginBottom: 16 }}>Curated Sale</div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(40px, 6vw, 72px)', marginBottom: 20, lineHeight: 1.05 }}>
             {pageData.title}
           </h1>
           {pageData.short_description && (
-            <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', color: 'var(--ink)', maxWidth: 600, margin: '0 auto', lineHeight: 1.5 }}>
+            <p style={{ fontSize: 'clamp(16px, 2vw, 20px)', opacity: 0.9, maxWidth: 560, margin: '0 auto 32px', lineHeight: 1.6 }}>
               {pageData.short_description}
             </p>
           )}
+          <div style={{ display: 'inline-flex', gap: 8, background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(6px)', borderRadius: 999, padding: '8px 20px', fontSize: 14, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {products.length} {products.length === 1 ? 'piece' : 'pieces'} on sale
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container" style={{ padding: '60px 20px' }}>
-        <div className="section-head">
-          <div className="section-title">Curated Selection</div>
-          <div className="section-sub">{products.length} {products.length === 1 ? 'item' : 'items'} in this collection</div>
+      {/* Products Grid */}
+      <section className="section container-wide">
+        <div className="section-head" style={{ marginBottom: 40 }}>
+          <div>
+            <div className="eyebrow" style={{ marginBottom: 8 }}>The Selection</div>
+            <h2>{pageData.title}</h2>
+          </div>
+          <button className="btn btn-ghost" onClick={() => onNav('home')}>← Back to Home</button>
         </div>
 
         {products.length > 0 ? (
-          <div className="grid">
-            {products.map(p => <ProductCard key={p.id} product={p} />)}
+          <div className="product-grid">
+            {products.map(p => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                variant={cardVariant}
+                isWishlisted={wishlist?.has(p.id)}
+                onToggleWishlist={onToggleWishlist}
+                onShop={onShop}
+                onNav={onNav}
+              />
+            ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--ink-soft)' }}>
-            No products have been added to this collection yet.
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--ink-soft)' }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🛍</div>
+            <p style={{ fontSize: 18 }}>No products have been added to this sale yet.</p>
+            <p style={{ fontSize: 14, marginTop: 8 }}>Check back soon or browse our other collections.</p>
+            <button className="btn btn-ink" style={{ marginTop: 24 }} onClick={() => onNav('home')}>Browse All Sales</button>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

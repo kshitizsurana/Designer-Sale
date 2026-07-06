@@ -146,3 +146,8 @@ ALTER TABLE looks ADD COLUMN IF NOT EXISTS feature_title TEXT;
 ALTER TABLE looks ADD COLUMN IF NOT EXISTS feature_body TEXT;
 ALTER TABLE looks ADD COLUMN IF NOT EXISTS feature_cta TEXT;
 
+-- Merchants updates (social and contact fields)
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS facebook TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS instagram TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS best_contact_method TEXT;
+ALTER TABLE merchants ADD COLUMN IF NOT EXISTS look_id INTEGER REFERENCES looks(id);

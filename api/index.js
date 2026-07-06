@@ -192,21 +192,28 @@ app.post('/api/merchants', authenticateToken, async (req, res) => {
     const { id, name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id } = req.body;
     const newId = id || 'm_' + Date.now().toString(36);
     
-    const { error } = await supabase.from('merchants').insert([{
-        id: newId, name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description,
-        facebook, instagram, best_contact_method: bestContactMethod, look_id
-    }]);
+    // Only include fields that are defined to avoid schema errors for columns not yet migrated
+    const row = { id: newId, name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description };
+    if (facebook !== undefined) row.facebook = facebook;
+    if (instagram !== undefined) row.instagram = instagram;
+    if (bestContactMethod !== undefined) row.best_contact_method = bestContactMethod;
+    if (look_id !== undefined) row.look_id = look_id;
+
+    const { error } = await supabase.from('merchants').insert([row]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/merchants/:id', authenticateToken, async (req, res) => {
     const { name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id } = req.body;
-    const { error } = await supabase.from('merchants').update({
-        name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description,
-        facebook, instagram, best_contact_method: bestContactMethod, look_id
-    }).eq('id', req.params.id);
     
+    const updates = { name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description };
+    if (facebook !== undefined) updates.facebook = facebook;
+    if (instagram !== undefined) updates.instagram = instagram;
+    if (bestContactMethod !== undefined) updates.best_contact_method = bestContactMethod;
+    if (look_id !== undefined) updates.look_id = look_id;
+
+    const { error } = await supabase.from('merchants').update(updates).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: req.params.id, ...req.body });
 });

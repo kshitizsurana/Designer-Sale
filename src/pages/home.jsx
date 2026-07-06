@@ -186,12 +186,23 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
             <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Sales</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Shop Featured Sales.</h2>
           </div>
-          <div className="tile-grid" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(280px, 1fr))` }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {data.landing_pages.filter(lp => lp.status !== 'archived').map((lp, i) => (
               <button
                 key={lp.id}
-                className="tile fade-in"
-                style={{ animationDelay: `${i * 60}ms`, minHeight: 400, border: '1px solid var(--line)' }}
+                className="fade-in"
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  height: '400px',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '1px solid var(--line)',
+                  animationDelay: `${i * 60}ms`,
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  textAlign: 'left'
+                }}
                 onClick={() => onNav('landing-page', null, null, lp.id)}
               >
                 {lp.image && (
@@ -210,12 +221,12 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 )}
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }} />
-                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, textAlign: 'left', color: '#fff' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 8 }}>{lp.title}</h3>
-                  <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 16 }}>{lp.short_description}</p>
-                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    Shop Sale <Icon.ArrowRight />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
+                <div style={{ position: 'relative', zIndex: 1, padding: '40px', color: '#fff' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 12 }}>{lp.title}</h3>
+                  <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 20, maxWidth: 600 }}>{lp.short_description}</p>
+                  <span className="btn btn-ghost" style={{ border: '1px solid rgba(255,255,255,0.4)', color: '#fff', backdropFilter: 'blur(4px)' }}>
+                    Shop Sale <Icon.ArrowRight style={{ marginLeft: 8 }} />
                   </span>
                 </div>
               </button>
