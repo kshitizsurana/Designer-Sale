@@ -176,6 +176,7 @@ function AdminProducts({ toast }) {
   const [catFilter, setCatFilter] = usePState('all');
   const [merchFilter, setMerchFilter] = usePState('all');
   const [brandFilter, setBrandFilter] = usePState('all');
+  const [lookFilter, setLookFilter] = usePState('all');
   const [page, setPage] = usePState(1);
   const itemsPerPage = 20;
 
@@ -213,16 +214,26 @@ function AdminProducts({ toast }) {
       if (catFilter !== 'all' && p.category !== catFilter) return false;
       if (merchFilter !== 'all' && p.merchantId !== merchFilter) return false;
       if (brandFilter !== 'all' && p.brandId !== brandFilter) return false;
+      // Style/Look filter: match on look_id or merchantid->merchant look
+      if (lookFilter !== 'all') {
+        const lk = looks.find(l => l.id === parseInt(lookFilter));
+        if (!lk) return false;
+        // products don't have look_id in DB yet — match via merchant if available
+        const pMerchant = merchants.find(m => m.id === p.merchantId);
+        const matchesMerchant = pMerchant && pMerchant.look_id === lk.id;
+        const matchesDirect = p.look_id === lk.id;
+        if (!matchesMerchant && !matchesDirect) return false;
+      }
       if (q && !p.title.toLowerCase().includes(q.toLowerCase())) return false;
       return true;
-    }).sort((a, b) => (b.added || 0) - (a.added || 0)); // Latest first
-  }, [products, q, catFilter, merchFilter, brandFilter]);
+    }).sort((a, b) => (b.added || 0) - (a.added || 0));
+  }, [products, q, catFilter, merchFilter, brandFilter, lookFilter, looks, merchants]);
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   // Reset page when filters change
-  usePEffect(() => { setPage(1); }, [q, catFilter, merchFilter, brandFilter]);
+  usePEffect(() => { setPage(1); }, [q, catFilter, merchFilter, brandFilter, lookFilter]);
 
   async function handleSave(data) {
     try {
@@ -285,6 +296,10 @@ function AdminProducts({ toast }) {
           <select className="admin-select" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
             <option value="all">All Categories</option>
             {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+          </select>
+          <select className="admin-select" value={lookFilter} onChange={e => setLookFilter(e.target.value)}>
+            <option value="all">All Styles</option>
+            {looks.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
           <select className="admin-select" value={brandFilter} onChange={e => setBrandFilter(e.target.value)}>
             <option value="all">All Brands</option>
