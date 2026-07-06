@@ -87,6 +87,16 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
 
   const otherLooks = data.looks.filter(l => l.id !== look.id);
 
+  const avgSaving = allLookProducts.length > 0 
+    ? Math.round(allLookProducts.reduce((sum, p) => sum + (p.discountPct || 0), 0) / allLookProducts.length) 
+    : 0;
+
+  const dynamicStats = [
+    { label: 'Boutiques', value: `${lookMerchants.length || 5}+` },
+    { label: 'Avg Saving', value: `${avgSaving || 35}%` },
+    { label: 'Styles', value: `${allLookProducts.length || 100}+` }
+  ];
+
   return (
     <main>
       {/* ════════════════════════════════
@@ -143,8 +153,8 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
 
           {/* Stats chips */}
           <div style={{ display: 'flex', gap: 0, border: '1px solid rgba(255,255,255,0.14)', maxWidth: 420, overflow: 'hidden', borderRadius: 2 }}>
-            {cfg.stats.map((s, i) => (
-              <div key={i} style={{ flex: 1, padding: '14px 20px', borderRight: i < cfg.stats.length - 1 ? '1px solid rgba(255,255,255,0.14)' : 'none', background: 'rgba(255,255,255,0.06)' }}>
+            {dynamicStats.map((s, i) => (
+              <div key={i} style={{ flex: 1, padding: '14px 20px', borderRight: i < dynamicStats.length - 1 ? '1px solid rgba(255,255,255,0.14)' : 'none', background: 'rgba(255,255,255,0.06)' }}>
                 <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: cfg.palette.accent, lineHeight: 1 }}>{s.value}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{s.label}</div>
               </div>

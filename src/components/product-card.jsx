@@ -15,7 +15,9 @@ function ProductCard({ product, variant = 'editorial', isWishlisted, onToggleWis
   function clickCard(e) {
     e.stopPropagation();
     e.preventDefault();
-    if (onNav) {
+    if (product.url) {
+      window.open(product.url, '_blank', 'noopener,noreferrer');
+    } else if (onNav) {
       onNav('product', null, null, product.id);
     } else if (onShop) {
       onShop(product);
@@ -24,7 +26,11 @@ function ProductCard({ product, variant = 'editorial', isWishlisted, onToggleWis
   function clickShop(e) {
     e.stopPropagation();
     e.preventDefault();
-    if (onShop) onShop(product);
+    if (product.url) {
+      window.open(product.url, '_blank', 'noopener,noreferrer');
+    } else if (onShop) {
+      onShop(product);
+    }
   }
 
   return (
