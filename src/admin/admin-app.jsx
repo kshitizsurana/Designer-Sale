@@ -108,8 +108,11 @@ function AdminApp() {
   const [toast, setToast] = useAdminState(null);
   const [stats, setStats] = useAdminState({});
 
-  function showToast(msg, type = 'success') {
-    setToast({ msg, type });
+  function showToast(msgOrObj, type = 'success') {
+    // Accept both showToast('text') and showToast({ type, msg })
+    const msg = typeof msgOrObj === 'object' && msgOrObj !== null ? msgOrObj.msg : msgOrObj;
+    const resolvedType = typeof msgOrObj === 'object' && msgOrObj !== null ? (msgOrObj.type || type) : type;
+    setToast({ msg: String(msg || ''), type: resolvedType });
     setTimeout(() => setToast(null), 2800);
   }
   window.adminToast = showToast;
