@@ -6,6 +6,10 @@
       "destination": "/DesignerSale Standalone Source.html"
     },
     {
+      "source": "/(dashboard|looks|collections|merchants|brands|products|landing-pages|upload)",
+      "destination": "/admin.html"
+    },
+    {
       "source": "/admin/:match*",
       "destination": "/admin.html"
     },

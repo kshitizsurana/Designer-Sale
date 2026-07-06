@@ -106,9 +106,15 @@ function AdminApp() {
   const [authed, setAuthed] = useAdminState(API.auth.isLoggedIn());
   const [page, setPage] = useAdminState(() => {
     let pathPage = '';
+    const path = window.location.pathname.replace(/^\//, '');
+    const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload'];
+    
     if (window.location.pathname.startsWith('/admin/')) {
       pathPage = window.location.pathname.replace('/admin/', '');
+    } else if (validPages.includes(path)) {
+      pathPage = path;
     }
+    
     const hash = window.location.hash.replace(/^#\/?/, '');
     return pathPage || hash || 'dashboard';
   });
@@ -117,13 +123,9 @@ function AdminApp() {
 
   // Sync state to URL
   useAdminEffect(() => {
-    if (window.location.pathname.startsWith('/admin')) {
-      const target = `/admin/${page}`;
-      if (window.location.pathname !== target) {
-        window.history.pushState(null, '', target);
-      }
-    } else if (window.location.hash !== `#/${page}`) {
-      window.location.hash = `/${page}`;
+    const target = `/${page}`;
+    if (window.location.pathname !== target) {
+      window.history.pushState(null, '', target);
     }
   }, [page]);
 
@@ -131,9 +133,15 @@ function AdminApp() {
   useAdminEffect(() => {
     const onPopState = () => {
       let pathPage = '';
+      const path = window.location.pathname.replace(/^\//, '');
+      const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload'];
+      
       if (window.location.pathname.startsWith('/admin/')) {
         pathPage = window.location.pathname.replace('/admin/', '');
+      } else if (validPages.includes(path)) {
+        pathPage = path;
       }
+      
       const hash = window.location.hash.replace(/^#\/?/, '');
       const newPage = pathPage || hash || 'dashboard';
       if (newPage !== page) setPage(newPage);
