@@ -107,7 +107,7 @@ function AdminApp() {
   const [page, setPage] = useAdminState(() => {
     let pathPage = '';
     const path = window.location.pathname.replace(/^\//, '');
-    const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload'];
+    const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
     
     if (window.location.pathname.startsWith('/admin/')) {
       pathPage = window.location.pathname.replace('/admin/', '');
@@ -134,7 +134,7 @@ function AdminApp() {
     const onPopState = () => {
       let pathPage = '';
       const path = window.location.pathname.replace(/^\//, '');
-      const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload'];
+      const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
       
       if (window.location.pathname.startsWith('/admin/')) {
         pathPage = window.location.pathname.replace('/admin/', '');
@@ -183,10 +183,12 @@ function AdminApp() {
     { id: 'merchants', label: 'Merchants', Icon: AIcon.Merchants, count: stats.totalMerchants },
     { id: 'brands',   label: 'Brands',    Icon: AIcon.Brands,    count: stats.totalBrands },
     { id: 'products', label: 'Products',  Icon: AIcon.Products,  count: stats.totalProducts },
-    { id: 'landing-pages', label: 'Landing Pages', Icon: AIcon.LandingPages },
+    { id: 'landing-pages', label: 'Home Page Landing Pages', Icon: AIcon.LandingPages },
+    { id: 'blogs', label: 'Blogs', Icon: AIcon.Dashboard },
+    { id: 'upload', label: 'Bulk Upload', Icon: AIcon.Upload },
   ];
 
-  const pageTitles = { dashboard: 'Dashboard', looks: 'Looks', collections: 'Collections', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages' };
+  const pageTitles = { dashboard: 'Dashboard', looks: 'Looks', collections: 'Collections', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages', blogs: 'Blogs' };
 
   return (
     <div className="admin-shell">
@@ -205,11 +207,6 @@ function AdminApp() {
               {item.count > 0 && <span className="admin-nav-badge">{item.count}</span>}
             </button>
           ))}
-          <div className="admin-nav-section">Tools</div>
-          <button className={`admin-nav-item ${page === 'upload' ? 'active' : ''}`} onClick={() => setPage('upload')}>
-            <AIcon.Upload />
-            <span>Bulk Upload</span>
-          </button>
         </nav>
         <div className="admin-sidebar-footer">
           <button className="admin-nav-item" onClick={logout} style={{ width: '100%', padding: '10px 20px' }}>
@@ -231,14 +228,15 @@ function AdminApp() {
           </div>
         </div>
         <div className="admin-content">
-          {page === 'dashboard' && <AdminDashboard onNav={setPage} toast={showToast} />}
-          {page === 'looks' && <AdminLooks toast={showToast} />}
-          {page === 'collections' && <AdminCollections toast={showToast} />}
-          {page === 'merchants' && <AdminMerchants toast={showToast} />}
-          {page === 'brands'   && <AdminBrands toast={showToast} />}
-          {page === 'products' && <AdminProducts toast={showToast} />}
-          {page === 'landing-pages' && <AdminLandingPages toast={showToast} />}
-          {page === 'upload'   && <AdminBulkUpload toast={showToast} />}
+            {page === 'dashboard' && <AdminDashboard stats={stats} toast={showToast} />}
+            {page === 'looks' && <AdminLooks toast={showToast} />}
+            {page === 'collections' && <AdminCollections toast={showToast} />}
+            {page === 'merchants' && <AdminMerchants toast={showToast} />}
+            {page === 'brands' && <AdminBrands toast={showToast} />}
+            {page === 'products' && <AdminProducts toast={showToast} />}
+            {page === 'landing-pages' && <AdminLandingPages toast={showToast} />}
+            {page === 'upload' && <AdminBulkUpload toast={showToast} />}
+            {page === 'blogs' && <AdminBlogs toast={showToast} />}
         </div>
       </div>
 

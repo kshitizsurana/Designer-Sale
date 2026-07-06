@@ -108,6 +108,14 @@
             delete: (id) => fetchAPI(`/brands/${id}`, { method: 'DELETE' }),
         },
 
+        // ---- Blogs ----
+        blogs: {
+            getAll: () => fetchAPI('/blogs'),
+            create: (data) => fetchAPI('/blogs', { method: 'POST', body: data }),
+            update: (id, data) => fetchAPI(`/blogs/${id}`, { method: 'PUT', body: data }),
+            delete: (id) => fetchAPI(`/blogs/${id}`, { method: 'DELETE' }),
+        },
+
         // ---- Products ----
         products: {
             getAll: () => fetchAPI('/products'),

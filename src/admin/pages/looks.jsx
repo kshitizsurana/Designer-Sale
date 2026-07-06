@@ -5,9 +5,11 @@ const { useState: useLkState, useEffect: useLkEffect, useMemo: useLkMemo } = Rea
 
 function LookFormModal({ look, onSave, onClose }) {
   const [form, setForm] = useLkState(look || {
-    name: '', slug: '', description: '', hero_image: '', status: 'active'
+    name: '', slug: '', description: '', hero_image: '', status: 'active',
+    tagline: '', keywords: [], feature_title: '', feature_body: '', feature_cta: ''
   });
   const [errors, setErrors] = useLkState({});
+  const [keywordsStr, setKeywordsStr] = useLkState((look?.keywords || []).join(', '));
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
 
@@ -22,21 +24,23 @@ function LookFormModal({ look, onSave, onClose }) {
   function submit(e) {
     e.preventDefault();
     if (!validate()) return;
-    onSave(form);
+    const keywords = keywordsStr.split(',').map(k => k.trim()).filter(Boolean);
+    onSave({ ...form, keywords });
   }
 
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
-      <div className="admin-modal" onClick={e => e.stopPropagation()}>
+      <div className="admin-modal" style={{ width: 680, maxWidth: '95%' }} onClick={e => e.stopPropagation()}>
         <div className="admin-modal-head">
           <div className="admin-modal-title">{look ? 'Edit Look' : 'Add Look'}</div>
           <button className="btn-icon" onClick={onClose}><AIcon.Close /></button>
         </div>
         <form onSubmit={submit} style={{ display: 'contents' }}>
-          <div className="admin-modal-body">
+          <div className="admin-modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--gold-deep)', padding: '0 0 12px', borderBottom: '1px solid var(--border-light)', marginBottom: 20 }}>Basic Info</div>
             <div className="form-group">
               <label className="form-label">Look name <span>*</span></label>
-              <input className={`form-input ${errors.name ? 'error' : ''}`} value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="e.g. Formal Wear" autoFocus />
+              <input className={`form-input ${errors.name ? 'error' : ''}`} value={form.name || ''} onChange={e => { set('name', e.target.value); if (!look) set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-')); }} placeholder="e.g. Formal Wear" autoFocus />
               {errors.name && <div className="form-error">{errors.name}</div>}
             </div>
             <div className="form-group">
@@ -45,8 +49,8 @@ function LookFormModal({ look, onSave, onClose }) {
               {errors.slug && <div className="form-error">{errors.slug}</div>}
             </div>
             <div className="form-group">
-              <label className="form-label">Description</label>
-              <textarea className="form-input" rows="4" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Describe the style, fit, and target audience..." style={{ resize: 'vertical' }} />
+              <label className="form-label">Short Description</label>
+              <textarea className="form-input" rows="3" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="Describe the style, fit, and target audience..." style={{ resize: 'vertical' }} />
             </div>
             <div className="form-group">
               <label className="form-label">Hero Image URL</label>
@@ -58,6 +62,30 @@ function LookFormModal({ look, onSave, onClose }) {
                 <option value="active">Active</option>
                 <option value="archived">Archived</option>
               </select>
+            </div>
+
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--gold-deep)', padding: '20px 0 12px', borderBottom: '1px solid var(--border-light)', marginBottom: 20 }}>Editorial Content (overrides defaults)</div>
+            <div className="form-group">
+              <label className="form-label">Hero Tagline</label>
+              <input className="form-input" value={form.tagline || ''} onChange={e => set('tagline', e.target.value)} placeholder="e.g. Sharply dressed, always." />
+              <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Shown below the look name in the hero section.</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Keywords (comma-separated)</label>
+              <input className="form-input" value={keywordsStr} onChange={e => setKeywordsStr(e.target.value)} placeholder="e.g. Tailored, Classic, Refined" />
+              <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Shown as pills in the hero. Separate each keyword with a comma.</p>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Feature Section Title</label>
+              <input className="form-input" value={form.feature_title || ''} onChange={e => set('feature_title', e.target.value)} placeholder="e.g. The Art of Formal Dressing" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Feature Section Body</label>
+              <textarea className="form-input" rows="4" value={form.feature_body || ''} onChange={e => set('feature_body', e.target.value)} placeholder="Describe the look's story and values..." style={{ resize: 'vertical' }} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Feature CTA Button Text</label>
+              <input className="form-input" value={form.feature_cta || ''} onChange={e => set('feature_cta', e.target.value)} placeholder="e.g. Shop Formal Now" />
             </div>
           </div>
           <div className="admin-modal-footer">
@@ -71,6 +99,7 @@ function LookFormModal({ look, onSave, onClose }) {
     </div>
   );
 }
+
 
 function AdminLooks({ toast }) {
   const [looks, setLooks] = useLkState([]);

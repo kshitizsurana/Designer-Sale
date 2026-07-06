@@ -445,6 +445,38 @@ app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (
         });
 });
 
+// --- BLOGS ---
+app.get('/api/blogs', async (req, res) => {
+    const { data, error } = await supabase.from('blogs').select('*').order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || []);
+});
+
+app.post('/api/blogs', authenticateToken, async (req, res) => {
+    const { title, slug, content, image, author, status, published_at } = req.body;
+    const newId = 'b_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    const { error } = await supabase.from('blogs').insert([{
+        id: newId, title, slug, content, image, author, status: status || 'draft', published_at
+    }]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: newId, ...req.body });
+});
+
+app.put('/api/blogs/:id', authenticateToken, async (req, res) => {
+    const { title, slug, content, image, author, status, published_at } = req.body;
+    const { error } = await supabase.from('blogs').update({
+        title, slug, content, image, author, status, published_at
+    }).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: req.params.id, ...req.body });
+});
+
+app.delete('/api/blogs/:id', authenticateToken, async (req, res) => {
+    const { error } = await supabase.from('blogs').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
+});
+
 // --- STATS ---
 app.get('/api/stats', async (req, res) => {
     try {

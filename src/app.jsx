@@ -225,6 +225,8 @@ function App() {
       {route.page === 'look'      && <LookPage {...commonProps} lookSlug={route.entityId} />}
       {route.page === 'landing-page' && <LandingPage />}
       {route.page === 'collection' && <CollectionPage {...commonProps} collectionSlug={route.entityId} lookSlug={route.categoryId} />}
+      {route.page === 'blog'      && <BlogList onNav={navigate} />}
+      {route.page === 'blog-post' && <BlogPost slug={route.entityId} onNav={navigate} />}
 
       <Footer onNav={navigate} categories={data.categories} />
 
@@ -321,6 +323,8 @@ function parseHash() {
   if (path === '/boutiques')         return { page: 'boutiques', categoryId: null, entityId: null };
   if (path === '/about')             return { page: 'about',     categoryId: null, entityId: null };
   if (path === '/wishlist')          return { page: 'wishlist',  categoryId: null, entityId: null };
+  if (path === '/blog')              return { page: 'blog',      categoryId: null, entityId: null };
+  if (path.startsWith('/blog/'))     return { page: 'blog-post', categoryId: null, entityId: path.slice(6) };
   return { page: 'home', categoryId: null, entityId: null };
 }
 

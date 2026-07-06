@@ -121,3 +121,28 @@ CREATE TABLE IF NOT EXISTS collection_products (
   display_order INTEGER DEFAULT 0,
   PRIMARY KEY (collection_id, product_id)
 );
+
+-- Landing Pages updates
+ALTER TABLE landing_pages ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'published';
+
+-- Blogs table
+CREATE TABLE IF NOT EXISTS blogs (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  content TEXT,
+  image TEXT,
+  author TEXT,
+  status TEXT DEFAULT 'draft',
+  published_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Looks updates (for dynamic text)
+ALTER TABLE looks ADD COLUMN IF NOT EXISTS tagline TEXT;
+ALTER TABLE looks ADD COLUMN IF NOT EXISTS keywords TEXT[];
+ALTER TABLE looks ADD COLUMN IF NOT EXISTS feature_title TEXT;
+ALTER TABLE looks ADD COLUMN IF NOT EXISTS feature_body TEXT;
+ALTER TABLE looks ADD COLUMN IF NOT EXISTS feature_cta TEXT;
+

@@ -121,6 +121,7 @@ function Header({ currentPage, currentCategory, wishlistCount, onNav, categories
               <div className="mobile-nav-divider" />
               <div className="mobile-nav-section-label">Discover</div>
               <a href="#/boutiques" onClick={(e) => { e.preventDefault(); onNav('boutiques'); setMobileNavOpen(false); }}>Boutiques</a>
+              <a href="#/blog" onClick={(e) => { e.preventDefault(); onNav('blog'); setMobileNavOpen(false); }}>The Editorial</a>
               <a href="#/about" onClick={(e) => { e.preventDefault(); onNav('about'); setMobileNavOpen(false); }}>How It Works</a>
               <a href="#/wishlist" onClick={(e) => { e.preventDefault(); onNav('wishlist'); setMobileNavOpen(false); }}>
                 Wishlist {wishlistCount > 0 && <span className="pill pill-gold" style={{ fontSize: 9 }}>{wishlistCount}</span>}
@@ -163,10 +164,11 @@ function Footer({ onNav, categories }) {
             <h4>Discover</h4>
             <ul>
               <li><a href="#/boutiques" onClick={(e)=>{e.preventDefault();onNav('boutiques');}}>All Boutiques</a></li>
+              <li><a href="#/blog" onClick={(e)=>{e.preventDefault();onNav('blog');}}>The Editorial</a></li>
               <li><a href="#/about" onClick={(e)=>{e.preventDefault();onNav('about');}}>How It Works</a></li>
               <li><a href="#/wishlist" onClick={(e)=>{e.preventDefault();onNav('wishlist');}}>Wishlist</a></li>
               <li><a href="#/">New This Week</a></li>
-              <li><a href="#/">70% Off & More</a></li>
+              <li><a href="#/">70% Off &amp; More</a></li>
             </ul>
           </div>
           <div>

@@ -43,6 +43,8 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   const [sort, setSort] = useLookState('discount');
   const [activeCategory, setActiveCategory] = useLookState('all');
   const [showAll, setShowAll] = useLookState(false);
+  const [boutiquePage, setBoutiquePage] = useLookState(0);
+  const BOUTIQUES_PER_PAGE = 4;
 
   useLookEffect(() => {
     if (look) {
@@ -60,7 +62,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   }, [look]);
 
   // Reset filters when slug changes
-  useLookEffect(() => { setSort('discount'); setActiveCategory('all'); setShowAll(false); }, [lookSlug]);
+  useLookEffect(() => { setSort('discount'); setActiveCategory('all'); setShowAll(false); setBoutiquePage(0); }, [lookSlug]);
 
   if (!look) {
     return (
@@ -84,6 +86,14 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
       .filter(c => c.look_id === look.id && c.status !== 'hidden')
       .sort((a, b) => a.display_order - b.display_order);
   }, [data.collections, look.id]);
+
+  const lookLandingPages = (data.landing_pages || []).filter(lp => lp.look_id === look.id && lp.status !== 'archived');
+
+  const keywords = look.keywords && look.keywords.length > 0 ? look.keywords : cfg.keywords;
+  const tagline = look.tagline || cfg.tagline;
+  const featureTitle = look.feature_title || cfg.feature.title;
+  const featureBody = look.feature_body || cfg.feature.body;
+  const featureCta = look.feature_cta || cfg.feature.cta;
 
   const otherLooks = data.looks.filter(l => l.id !== look.id);
 
@@ -131,12 +141,12 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
               {look.name}
             </h1>
             <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6, marginBottom: 24, maxWidth: 520 }}>
-              {look.description || cfg.tagline}
+              {look.description || tagline}
             </p>
 
             {/* Keyword pills */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 32 }}>
-              {cfg.keywords.map(k => (
+              {keywords.map(k => (
                 <span key={k} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '5px 12px', border: '1px solid rgba(255,255,255,0.28)', color: 'rgba(255,255,255,0.7)', borderRadius: 2 }}>{k}</span>
               ))}
             </div>
@@ -163,85 +173,76 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
         </div>
       </section>
 
-      {/* ════════════════════════════════
-          FEATURED BOUTIQUES
-      ════════════════════════════════ */}
-      {lookMerchants.length > 0 && (
-        <section style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--line)' }}>
-          <div className="container-wide" style={{ padding: 'var(--pad-xl) var(--pad-lg)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 8 }}>Curated boutiques</div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.1 }}>
-                  Shop <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>{look.name}</em> at
-                </h2>
-              </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => onNav('boutiques')}>All boutiques</button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(lookMerchants.length, 4)}, 1fr)`, gap: 16 }}>
-              {lookMerchants.map(b => (
-                <button
-                  key={b.id}
-                  onClick={() => onNav('merchant', null, null, b.id)}
-                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--line)', padding: '20px 24px', cursor: 'pointer', textAlign: 'left', transition: 'border-color 180ms ease, box-shadow 180ms ease', borderRadius: 2 }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(168,133,74,0.12)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--ink)', marginBottom: 6, letterSpacing: '-0.01em' }}>{b.name}</div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>{b.city} · {b.state}</div>
-                  {b.focus && <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.4 }}>{b.focus}</div>}
-                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>
-                    View Boutique <Icon.ArrowRight />
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+
 
       {/* ════════════════════════════════
-          CURATED COLLECTIONS
+          CURATED COLLECTIONS & LANDING PAGES
       ════════════════════════════════ */}
-      {lookCollections.length === 0 ? (
-        <section className="section container-wide" style={{ textAlign: 'center', padding: '120px 20px', color: 'var(--ink-muted)' }}>
-          <p>No collections have been curated for this style yet.</p>
-        </section>
-      ) : (
-        lookCollections.map((collection, idx) => {
-          // Resolve products for this collection
-          const pids = collection.product_ids || [];
-          const pMap = new Map(data.products.map(p => [p.id, p]));
-          const prods = pids.map(id => pMap.get(id)).filter(Boolean);
-  
-          if (prods.length === 0) return null;
-  
-          return (
-            <React.Fragment key={collection.id}>
-              {idx > 0 && <hr className="divider-rule" />}
-              <section className="section container-wide">
-                <div className="section-head">
-                  <div>
-                    <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Collection</div>
-                    <h2>{collection.title}</h2>
-                    {collection.description && (
-                      <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{collection.description}</p>
-                    )}
+      <div id="look-products">
+        {lookLandingPages.map((lp, idx) => (
+          <React.Fragment key={lp.id}>
+            {idx > 0 && <hr className="divider-rule" />}
+            <section className="section container-wide">
+              <div className="section-head">
+                <div>
+                  <div className="eyebrow" style={{ marginBottom: 10 }}>Special Feature</div>
+                  <h2>{lp.title}</h2>
+                  {lp.short_description && <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{lp.short_description}</p>}
+                </div>
+                <button className="section-head-link" onClick={() => onNav('landing-page', null, null, lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}>
+                  View Campaign <Icon.ArrowRight />
+                </button>
+              </div>
+              {lp.image && (
+                <div style={{ width: '100%', height: 320, background: '#eee', marginBottom: 32, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
+                  <img src={lp.image} alt={lp.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.1)' }} />
+                </div>
+              )}
+            </section>
+          </React.Fragment>
+        ))}
+
+        {lookCollections.length === 0 && lookLandingPages.length === 0 ? (
+          <section className="section container-wide" style={{ textAlign: 'center', padding: '120px 20px', color: 'var(--ink-muted)' }}>
+            <p>No collections have been curated for this style yet.</p>
+          </section>
+        ) : (
+          lookCollections.map((collection, idx) => {
+            // Resolve products for this collection
+            const pids = collection.product_ids || [];
+            const pMap = new Map(data.products.map(p => [p.id, p]));
+            const prods = pids.map(id => pMap.get(id)).filter(Boolean);
+    
+            if (prods.length === 0) return null;
+    
+            return (
+              <React.Fragment key={collection.id}>
+                {(idx > 0 || lookLandingPages.length > 0) && <hr className="divider-rule" />}
+                <section className="section container-wide">
+                  <div className="section-head">
+                    <div>
+                      <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Collection</div>
+                      <h2>{collection.title}</h2>
+                      {collection.description && (
+                        <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{collection.description}</p>
+                      )}
+                    </div>
+                    <button className="section-head-link" onClick={() => onNav('collection', look.slug, null, collection.slug)}>
+                      View All {prods.length} <Icon.ArrowRight />
+                    </button>
                   </div>
-                  <button className="section-head-link" onClick={() => onNav('collection', look.slug, null, collection.slug)}>
-                    View All {prods.length} <Icon.ArrowRight />
-                  </button>
-                </div>
-                <div className="product-grid">
-                  {prods.slice(0, 8).map(p => (
-                    <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
-                  ))}
-                </div>
-              </section>
-            </React.Fragment>
-          );
-        })
-      )}
+                  <div className="product-grid">
+                    {prods.slice(0, 8).map(p => (
+                      <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
+                    ))}
+                  </div>
+                </section>
+              </React.Fragment>
+            );
+          })
+        )}
+      </div>
 
       {/* ════════════════════════════════
           EDITORIAL SPLIT — look feature
@@ -268,14 +269,14 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
             <div style={{ padding: '0 var(--pad-md)' }}>
               <div className="eyebrow" style={{ color: cfg.palette.accent, marginBottom: 18 }}>The Look</div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(34px, 3.6vw, 56px)', lineHeight: 1.04, letterSpacing: '-0.015em', color: '#fff', marginBottom: 22 }}>
-                {cfg.feature.title}
+                {featureTitle}
               </h2>
               <p style={{ color: 'rgba(245,240,234,0.72)', fontSize: 16, lineHeight: 1.7, maxWidth: 460, marginBottom: 32 }}>
-                {cfg.feature.body}
+                {featureBody}
               </p>
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <button className="btn btn-gold" onClick={() => document.getElementById('look-products')?.scrollIntoView({ behavior: 'smooth' })}>
-                  {cfg.feature.cta} <Icon.ArrowRight />
+                  {featureCta} <Icon.ArrowRight />
                 </button>
                 <button className="btn" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }} onClick={() => onNav('boutiques')}>
                   Browse Boutiques
@@ -283,7 +284,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
               </div>
               {/* Keyword tags */}
               <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {cfg.keywords.map(k => (
+                {keywords.map(k => (
                   <span key={k} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '4px 10px', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', borderRadius: 2 }}>{k}</span>
                 ))}
               </div>
@@ -341,6 +342,75 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                 );
               })}
             </div>
+          </section>
+        </>
+      )}
+
+      {/* ════════════════════════════════
+          BOUTIQUES (Paginated)
+      ════════════════════════════════ */}
+      {lookMerchants.length > 0 && (
+        <>
+          <hr className="divider-rule" />
+          <section className="section container-wide">
+            <div className="section-head" style={{ marginBottom: 28 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>Shop {look.name} at</div>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.1 }}>
+                  Boutiques
+                </h2>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => onNav('boutiques')}>All boutiques</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
+              {lookMerchants.slice(boutiquePage * BOUTIQUES_PER_PAGE, (boutiquePage + 1) * BOUTIQUES_PER_PAGE).map(b => (
+                <button
+                  key={b.id}
+                  onClick={() => onNav('merchant', null, null, b.id)}
+                  style={{ background: 'var(--bg-elevated)', border: '1px solid var(--line)', padding: '20px 24px', cursor: 'pointer', textAlign: 'left', transition: 'border-color 180ms ease, box-shadow 180ms ease', borderRadius: 2 }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(168,133,74,0.12)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--ink)', marginBottom: 6, letterSpacing: '-0.01em' }}>{b.name}</div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>{b.city} · {b.state}</div>
+                  {b.focus && <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.4 }}>{b.focus}</div>}
+                  <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--gold-deep)' }}>
+                    View Boutique <Icon.ArrowRight />
+                  </div>
+                </button>
+              ))}
+            </div>
+            {/* Pagination */}
+            {lookMerchants.length > BOUTIQUES_PER_PAGE && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={boutiquePage === 0}
+                  onClick={() => setBoutiquePage(p => Math.max(0, p - 1))}
+                  style={{ opacity: boutiquePage === 0 ? 0.4 : 1 }}
+                >
+                  ← Prev
+                </button>
+                {Array.from({ length: Math.ceil(lookMerchants.length / BOUTIQUES_PER_PAGE) }, (_, i) => (
+                  <button
+                    key={i}
+                    className={`btn btn-sm ${boutiquePage === i ? 'btn-gold' : 'btn-ghost'}`}
+                    onClick={() => setBoutiquePage(i)}
+                    style={{ minWidth: 36 }}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={boutiquePage >= Math.ceil(lookMerchants.length / BOUTIQUES_PER_PAGE) - 1}
+                  onClick={() => setBoutiquePage(p => Math.min(Math.ceil(lookMerchants.length / BOUTIQUES_PER_PAGE) - 1, p + 1))}
+                  style={{ opacity: boutiquePage >= Math.ceil(lookMerchants.length / BOUTIQUES_PER_PAGE) - 1 ? 0.4 : 1 }}
+                >
+                  Next →
+                </button>
+              </div>
+            )}
           </section>
         </>
       )}
