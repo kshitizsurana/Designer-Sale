@@ -132,12 +132,59 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
 
       <hr className="divider-rule" />
 
-      {/* ---- Featured Sales (Landing Pages as Styles) ---- */}
-      {data.landing_pages && data.landing_pages.filter(lp => lp.status !== 'archived').length > 0 && (
+      {/* ---- Shop By Style (Looks) ---- */}
+      {data.looks && data.looks.length > 0 && (
         <section className="section container-wide">
           <div className="section-head" style={{ textAlign: 'center', display: 'block', marginBottom: 40 }}>
             <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Collections</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Shop By Style.</h2>
+          </div>
+          <div className="tile-grid" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(280px, 1fr))` }}>
+            {data.looks.map((look, i) => (
+              <button
+                key={look.id}
+                className="tile fade-in"
+                style={{ animationDelay: `${i * 60}ms`, minHeight: 400, border: '1px solid var(--line)' }}
+                onClick={() => onNav('look', null, null, look.slug)}
+              >
+                {look.hero_image && (
+                  <img
+                    src={look.hero_image}
+                    alt={look.name}
+                    loading="lazy"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      transition: 'transform 600ms ease',
+                    }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }} />
+                <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, textAlign: 'left', color: '#fff' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 8 }}>{look.name}</h3>
+                  <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 16 }}>{look.description}</p>
+                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    View Collection <Icon.ArrowRight />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <hr className="divider-rule" />
+
+      {/* ---- Featured Sales (Landing Pages) ---- */}
+      {data.landing_pages && data.landing_pages.filter(lp => lp.status !== 'archived').length > 0 && (
+        <section className="section container-wide">
+          <div className="section-head" style={{ textAlign: 'center', display: 'block', marginBottom: 40 }}>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Sales</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Shop Featured Sales.</h2>
           </div>
           <div className="tile-grid" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(280px, 1fr))` }}>
             {data.landing_pages.filter(lp => lp.status !== 'archived').map((lp, i) => (
@@ -168,7 +215,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 8 }}>{lp.title}</h3>
                   <p style={{ fontSize: 14, opacity: 0.9, marginBottom: 16 }}>{lp.short_description}</p>
                   <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    View Collection <Icon.ArrowRight />
+                    Shop Sale <Icon.ArrowRight />
                   </span>
                 </div>
               </button>
