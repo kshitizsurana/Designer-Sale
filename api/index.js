@@ -24,19 +24,22 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 }
 const supabase = (SUPABASE_URL && SUPABASE_KEY) ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
+app.use(cors());
+app.use(express.json());
+
+app.get('/api/version', (req, res) => {
+    res.json({
+        version: '1.0.2-deployment-ready',
+        supabaseConfigured: Boolean(supabase)
+    });
+});
+
 // Middleware to check if Supabase is initialized
 app.use((req, res, next) => {
     if (!supabase) {
         return res.status(500).json({ error: 'Supabase credentials are not configured in Vercel Environment Variables.' });
     }
     next();
-});
-
-app.use(cors());
-app.use(express.json());
-
-app.get('/api/version', (req, res) => {
-    res.json({ version: '1.0.1-no-inventory' });
 });
 // Vercel serves static files natively via vercel.json configuration.
 // No express.static or static HTML routes needed here.
@@ -87,20 +90,19 @@ app.post('/api/upload-image', authenticateToken, upload.single('file'), async (r
       const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
       return res.json({ url: dataUrl, warning: 'Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET in env vars.' });
     }
-    // Upload to Cloudinary
+    // Upload to Cloudinary. Uses Node 20's built-in fetch/FormData/Blob so the
+    // serverless function has no hidden runtime dependencies.
     const crypto = require('crypto');
-    const FormData = require('form-data');
-    const nodeFetch = require('node-fetch');
     const timestamp = Math.round(Date.now() / 1000);
     const folder = 'designersale';
     const signature = crypto.createHash('sha1').update(`folder=${folder}&timestamp=${timestamp}${API_SECRET}`).digest('hex');
     const form = new FormData();
-    form.append('file', req.file.buffer, { filename: req.file.originalname, contentType: req.file.mimetype });
+    form.append('file', new Blob([req.file.buffer], { type: req.file.mimetype }), req.file.originalname);
     form.append('api_key', API_KEY);
     form.append('timestamp', String(timestamp));
     form.append('folder', folder);
     form.append('signature', signature);
-    const r = await nodeFetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: form });
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: form });
     const result = await r.json();
     if (result.error) return res.status(500).json({ error: result.error.message });
     return res.json({ url: result.secure_url, public_id: result.public_id });
