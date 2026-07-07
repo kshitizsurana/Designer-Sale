@@ -144,6 +144,27 @@
         // ---- Stats ----
         stats: {
             get: () => fetchAPI('/stats')
+        },
+
+        // ---- Image Upload (Cloudinary or base64 fallback) ----
+        images: {
+            // Upload a File object → returns { url }
+            upload: async (file) => {
+                const token = getAuthToken();
+                const headers = {};
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+                const form = new FormData();
+                form.append('file', file);
+                const res = await fetch(`${API_BASE}/upload-image`, { method: 'POST', headers, body: form });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Upload failed');
+                return data; // { url, public_id?, warning? }
+            },
+            // Pass a URL through (no upload)
+            passUrl: async (url) => {
+                const data = await fetchAPI('/upload-image', { method: 'POST', body: { url } });
+                return data;
+            }
         }
     };
 

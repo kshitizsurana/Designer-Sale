@@ -10,7 +10,7 @@ const LOOK_CONFIG = {
     icon: '👔',
     tagline: 'Boardroom to dinner. Sharply done.',
     keywords: ['Tailored', 'Office Wear', 'Young Professionals', 'Luxury', 'Evening'],
-    stats: [{ label: 'Boutiques', value: '6+' }, { label: 'Avg Saving', value: '42%' }, { label: 'Styles', value: '180+' }],
+    stats: [{ label: 'Boutiques', value: '10+' }, { label: 'Avg Saving', value: '42%' }, { label: 'Styles', value: '180+' }],
     feature: { title: 'The Power Wardrobe', body: 'Structured silhouettes and elevated fabrics from Australia\'s most discerning boutiques. From the boardroom to dinner — every piece earns its place.', cta: 'Shop Tailored' },
   },
   'bohemian': {
@@ -18,7 +18,7 @@ const LOOK_CONFIG = {
     icon: '🌿',
     tagline: 'Earth, print & effortless ease.',
     keywords: ['Boho Chic', 'Floral', 'Earthy', 'Flowing', 'Artisan'],
-    stats: [{ label: 'Boutiques', value: '5+' }, { label: 'Avg Saving', value: '38%' }, { label: 'Styles', value: '120+' }],
+    stats: [{ label: 'Boutiques', value: '4+' }, { label: 'Avg Saving', value: '38%' }, { label: 'Styles', value: '120+' }],
     feature: { title: 'Free-Spirit Fashion', body: 'Flowing silhouettes, botanical prints, and artisan-crafted pieces that travel from beach to table with effortless confidence.', cta: 'Shop Bohemian' },
   },
   'casuals': {
@@ -28,6 +28,14 @@ const LOOK_CONFIG = {
     keywords: ['Baggy Fits', 'Streetwear', 'Basics', 'Teens', 'Relaxed'],
     stats: [{ label: 'Boutiques', value: '5+' }, { label: 'Avg Saving', value: '45%' }, { label: 'Styles', value: '150+' }],
     feature: { title: 'Effortless Every Day', body: 'Laid-back cuts and contemporary basics from Australia\'s coolest independent boutiques. Dress down without looking like it.', cta: 'Shop Casuals' },
+  },
+  'resort-wear': {
+    palette: { hero: 'linear-gradient(135deg,#0a1f2e 0%,#0d3349 50%,#1a5070 100%)', accent: '#5BBFE8', badge: '#0a1f2e' },
+    icon: '🌴',
+    tagline: 'Vacation mode, always.',
+    keywords: ['Vacation', 'Poolside', 'Cruise', 'Summer', 'Escape'],
+    stats: [{ label: 'Boutiques', value: '3+' }, { label: 'Avg Saving', value: '40%' }, { label: 'Styles', value: '100+' }],
+    feature: { title: 'The Great Escape', body: 'Breezy fabrics and sunset-ready silhouettes from Australia\'s best boutiques. The ultimate collection for when the out-of-office is on.', cta: 'Shop Resort' },
   },
 };
 

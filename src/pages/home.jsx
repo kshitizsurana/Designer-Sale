@@ -13,13 +13,19 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
     };
   }, []);
 
+  const totalBoutiques = data.merchants ? data.merchants.length : 0;
+  const totalItems = data.products ? data.products.length : 0;
+  const avgDiscount = data.products && data.products.length > 0 
+    ? Math.round(data.products.reduce((acc, p) => acc + (p.discountPct || 0), 0) / data.products.length) 
+    : 0;
+
   return (
     <main>
       {/* ---- Hero ---- */}
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <div className="eyebrow">May Edit · 412 styles on sale now</div>
+            <div className="eyebrow">May Edit · {totalItems} styles on sale now</div>
             <h1>
               Maxi Dresses<br />
               & Kaftans<br />
@@ -47,9 +53,9 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
               fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em',
               textTransform: 'uppercase', color: 'var(--ink-muted)',
             }}>
-              <span><span style={{color:'var(--gold-deep)', fontSize:13, fontWeight:700, marginRight:4}}>140+</span>Boutiques</span>
-              <span><span style={{color:'var(--gold-deep)', fontSize:13, fontWeight:700, marginRight:4}}>1,876</span>Items live</span>
-              <span><span style={{color:'var(--gold-deep)', fontSize:13, fontWeight:700, marginRight:4}}>62%</span>Avg discount</span>
+              <span><span style={{color:'var(--gold-deep)', fontSize:13, fontWeight:700, marginRight:4}}>{totalBoutiques}</span>Boutiques</span>
+              <span><span style={{color:'var(--gold-deep)', fontSize:13, fontWeight:700, marginRight:4}}>{totalItems.toLocaleString()}</span>Items live</span>
+              <span><span style={{color:'var(--gold-deep)', fontSize:13, fontWeight:700, marginRight:4}}>{avgDiscount}%</span>Avg discount</span>
             </div>
           </div>
           <div className="hero-art">

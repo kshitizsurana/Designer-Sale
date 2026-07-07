@@ -10,6 +10,25 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
   });
   const [sizeInput, setSizeInput] = usePState('');
   const [errors, setErrors] = usePState({});
+  const [uploading, setUploading] = usePState(false);
+  const [uploadMsg, setUploadMsg] = usePState('');
+
+  async function handleImageFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { setUploadMsg('File too large (max 8 MB)'); return; }
+    setUploading(true);
+    setUploadMsg('Uploading…');
+    try {
+      const result = await API.images.upload(file);
+      set('image', result.url);
+      setUploadMsg(result.warning ? `⚠️ ${result.warning}` : '✅ Uploaded!');
+    } catch (err) {
+      setUploadMsg('❌ Upload failed: ' + err.message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function set(key, val) { setForm(f => ({ ...f, [key]: val })); }
 
@@ -136,8 +155,20 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
             </div>
 
             <div className="form-group">
-              <label className="form-label">Image URL</label>
-              <input type="url" className="form-input" value={form.image || ''} onChange={e => set('image', e.target.value)} placeholder="https://..." />
+              <label className="form-label">Product Image</label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+                <input type="url" className="form-input" value={form.image || ''} onChange={e => set('image', e.target.value)} placeholder="Paste image URL…" style={{ flex: 1 }} />
+                <label className={`btn btn-ghost btn-sm`} style={{ cursor: uploading ? 'not-allowed' : 'pointer', opacity: uploading ? 0.6 : 1, whiteSpace: 'nowrap' }}>
+                  {uploading ? 'Uploading…' : '⬆ Upload File'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleImageFile} disabled={uploading} />
+                </label>
+              </div>
+              {uploadMsg && <div style={{ fontSize: 11, color: uploadMsg.startsWith('❌') ? 'var(--color-danger)' : uploadMsg.startsWith('⚠') ? '#c9a24a' : 'green', marginBottom: 6 }}>{uploadMsg}</div>}
+              {form.image && (
+                <div style={{ marginTop: 6 }}>
+                  <img src={form.image} alt="Preview" style={{ maxWidth: 120, maxHeight: 80, objectFit: 'cover', border: '1px solid var(--line)' }} onError={e => { e.currentTarget.style.display='none'; }} />
+                </div>
+              )}
             </div>
 
             <div className="form-group">

@@ -46,6 +46,19 @@ const LOOKS = [
     feature_cta: 'Shop Casuals',
     status: 'active',
   },
+  {
+    id: 4,
+    name: 'Resort Wear',
+    slug: 'resort-wear',
+    description: 'Vacation ready, poolside elegance, and cruise wear.',
+    hero_image: 'https://images.unsplash.com/photo-1574621100236-d25b64dcce0d?auto=format&fit=crop&q=80&w=1200',
+    tagline: 'Vacation mode, always.',
+    keywords: ['Vacation', 'Poolside', 'Cruise', 'Summer', 'Escape'],
+    feature_title: 'The Great Escape',
+    feature_body: "Breezy fabrics and sunset-ready silhouettes. The ultimate collection for when the out-of-office is on.",
+    feature_cta: 'Shop Resort',
+    status: 'active',
+  },
 ];
 
 async function main() {

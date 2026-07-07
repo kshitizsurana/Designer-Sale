@@ -1,3 +1,6 @@
+// Load .env from the api/ directory regardless of working directory
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -34,7 +37,7 @@ app.use(express.json());
 // Vercel serves static files natively via vercel.json configuration.
 // No express.static or static HTML routes needed here.
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 // --- AUTHENTICATION ---
 
@@ -64,6 +67,43 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// --- IMAGE UPLOAD (Cloudinary or base64 fallback) ---
+// POST /api/upload-image  (multipart: field 'file') or JSON body { url: '...' }
+app.post('/api/upload-image', authenticateToken, upload.single('file'), async (req, res) => {
+  try {
+    const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+    const API_KEY    = process.env.CLOUDINARY_API_KEY;
+    const API_SECRET = process.env.CLOUDINARY_API_SECRET;
+    // Passthrough URL
+    if (!req.file && req.body && req.body.url) return res.json({ url: req.body.url });
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    // No Cloudinary creds — return base64 fallback
+    if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+      const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      return res.json({ url: dataUrl, warning: 'Cloudinary not configured. Set CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET in env vars.' });
+    }
+    // Upload to Cloudinary
+    const crypto = require('crypto');
+    const FormData = require('form-data');
+    const nodeFetch = require('node-fetch');
+    const timestamp = Math.round(Date.now() / 1000);
+    const folder = 'designersale';
+    const signature = crypto.createHash('sha1').update(`folder=${folder}&timestamp=${timestamp}${API_SECRET}`).digest('hex');
+    const form = new FormData();
+    form.append('file', req.file.buffer, { filename: req.file.originalname, contentType: req.file.mimetype });
+    form.append('api_key', API_KEY);
+    form.append('timestamp', String(timestamp));
+    form.append('folder', folder);
+    form.append('signature', signature);
+    const r = await nodeFetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: 'POST', body: form });
+    const result = await r.json();
+    if (result.error) return res.status(500).json({ error: result.error.message });
+    return res.json({ url: result.secure_url, public_id: result.public_id });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
 
 // --- LOOKS (Public Read, Protected Write) ---
 app.get('/api/looks', async (req, res) => {
@@ -357,8 +397,7 @@ app.post('/api/products', authenticateToken, async (req, res) => {
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const { error } = await supabase.from('products').insert([{
-        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description,
-        inventory: inventory != null ? parseInt(inventory, 10) : 0, look_id
+        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description
     }]);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -370,8 +409,7 @@ app.put('/api/products/:id', authenticateToken, async (req, res) => {
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const { error } = await supabase.from('products').update({
-        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description,
-        inventory: inventory != null ? parseInt(inventory, 10) : 0, look_id
+        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description
     }).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });
