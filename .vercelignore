@@ -1,4 +1,6 @@
 api/.env
 api/node_modules
+api/package-lock.json
+api/package.json
 api/scripts
 api/test.js
