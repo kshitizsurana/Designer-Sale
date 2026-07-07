@@ -382,26 +382,41 @@ app.get('/api/products', async (req, res) => {
         
     if (error) return res.status(500).json({ error: error.message });
     
-    const products = data.map(r => ({
-        ...r,
-        brandId: r.brandid,
-        merchantId: r.merchantid,
-        discountPct: r.discountpct,
-        newIn: r.newin,
-        brand: r.brand ? r.brand.name : null,
-        merchant: r.merchant ? r.merchant.name : null
-    }));
+    const products = data.map(r => {
+        let desc = r.description || '';
+        let url = null;
+        if (desc.startsWith('{')) {
+            try {
+                const parsed = JSON.parse(desc);
+                desc = parsed.desc || '';
+                url = parsed.url || null;
+            } catch (e) {}
+        }
+        return {
+            ...r,
+            brandId: r.brandid,
+            merchantId: r.merchantid,
+            discountPct: r.discountpct,
+            newIn: r.newin,
+            brand: r.brand ? r.brand.name : null,
+            merchant: r.merchant ? r.merchant.name : null,
+            description: desc,
+            url: url
+        };
+    });
     res.json(products);
 });
 
 app.post('/api/products', authenticateToken, async (req, res) => {
-    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory, look_id } = req.body;
+    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, url, look_id } = req.body;
     const newId = id || 'p_' + Date.now().toString(36);
     const added = Date.now();
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
+    const finalDesc = url ? JSON.stringify({ desc: description || '', url }) : (description || '');
+
     const { error } = await supabase.from('products').insert([{
-        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description
+        id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description: finalDesc
     }]);
     
     if (error) return res.status(500).json({ error: error.message });
@@ -409,11 +424,13 @@ app.post('/api/products', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/products/:id', authenticateToken, async (req, res) => {
-    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, inventory, look_id } = req.body;
+    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, url, look_id } = req.body;
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
+    const finalDesc = url ? JSON.stringify({ desc: description || '', url }) : (description || '');
+
     const { error } = await supabase.from('products').update({
-        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description
+        category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description: finalDesc
     }).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });

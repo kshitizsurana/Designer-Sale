@@ -6,7 +6,7 @@ const { useState: usePState, useEffect: usePEffect, useMemo: useMemo_P } = React
 function ProductFormModal({ product, categories, merchants, brands, onSave, onClose }) {
   const [form, setForm] = usePState(product || {
     title: '', category: 'maxi-dresses', merchantId: merchants[0]?.id || '', brandId: brands[0]?.id || '',
-    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', inventory: 0, look_id: ''
+    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', url: '', inventory: 0, look_id: ''
   });
   const [sizeInput, setSizeInput] = usePState('');
   const [errors, setErrors] = usePState({});
@@ -169,6 +169,11 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
                   <img src={form.image} alt="Preview" style={{ maxWidth: 120, maxHeight: 80, objectFit: 'cover', border: '1px solid var(--line)' }} onError={e => { e.currentTarget.style.display='none'; }} />
                 </div>
               )}
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Product Checkout / Detail URL (links to boutique's store)</label>
+              <input type="url" className="form-input" value={form.url || ''} onChange={e => set('url', e.target.value)} placeholder="e.g. https://parlourx.com.au/products/zimmermann-silk-dress" />
             </div>
 
             <div className="form-group">

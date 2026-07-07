@@ -239,11 +239,8 @@ async function run() {
   for (const merchant of ALL_MERCHANTS) {
     const tpls = PRODUCT_TEMPLATES[merchant.look_id] || PRODUCT_TEMPLATES[1];
     const count = Math.floor(Math.random() * 2) + 5; // 5–6
-    const used = new Set();
     for (let i = 0; i < count; i++) {
-      let tpl;
-      // Cycle through templates to ensure category diversity
-      tpl = tpls[i % tpls.length];
+      const tpl = tpls[i % tpls.length];
       const titleArr = tpl.titles;
       const title = titleArr[Math.floor(Math.random() * titleArr.length)];
       const bName = pick(BRANDS_BY_LOOK[merchant.look_id]);
@@ -251,6 +248,14 @@ async function run() {
       const rrp = (Math.floor(Math.random() * 32) + 8) * 25; // $200–$1000
       const discPct = Math.floor(Math.random() * 45) + 20; // 20–65%
       const sale = Math.round(rrp * (1 - discPct / 100) / 5) * 5;
+      
+      const cleanBName = bName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const cleanTitle = title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const prodUrl = `${merchant.website}/products/${cleanBName}-${cleanTitle}`;
+      const baseDesc = `${title} from ${merchant.name}. Sale price reflects a ${discPct}% saving from the original RRP.`;
+      
+      // Store description and URL as a serialized JSON string in the description column
+      const serializedDescription = JSON.stringify({ desc: baseDesc, url: prodUrl });
 
       products.push({
         id: uid(),
@@ -265,7 +270,7 @@ async function run() {
         sizes: ['XS', 'S', 'M', 'L', 'XL'].slice(0, Math.floor(Math.random() * 3) + 2),
         image: pick(catImages),
         added: Date.now() - Math.floor(Math.random() * 86400000 * 30),
-        description: `${title} from ${merchant.name}. Sale price reflects a ${discPct}% saving from the original RRP.`,
+        description: serializedDescription,
       });
     }
   }
