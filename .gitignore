@@ -4,3 +4,4 @@ server/designer_sale.sqlite
 *.log
 .DS_Store
 server/.env
+api/.env
