@@ -607,3 +607,8 @@ app.delete('/api/landing-pages/:id', authenticateToken, async (req, res) => {
 });
 
 module.exports = app;
+
+if (require.main === module) {
+    const listenPort = process.env.PORT || 3000;
+    app.listen(listenPort, () => console.log(`API Server listening on port ${listenPort}`));
+}
