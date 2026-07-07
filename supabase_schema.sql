@@ -20,10 +20,13 @@ CREATE TABLE IF NOT EXISTS looks (
 -- Seed the three default looks
 INSERT INTO looks (id, name, slug, description, hero_image, status)
 VALUES
-  (1, 'Formal Wear', 'formal-wear',  'Tailored fits, office wear, and sophisticated styles for young professionals.',       'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?auto=format&fit=crop&q=80&w=800', 'active'),
-  (2, 'Bohemian',    'bohemian',     'Boho chic, floral patterns, and earthy relaxed styles for an effortless look.',       'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800', 'active'),
-  (3, 'Casuals',     'casuals',      'Baggy fits, everyday casual wear, and structured basics for teens and young adults.',  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=800', 'active')
-ON CONFLICT (id) DO NOTHING;
+  (1, 'Formal Wear', 'formal-wear',  'Tailored fits, office wear, and sophisticated styles for young professionals.',       'https://images.unsplash.com/photo-1594938298605-c8c884d58744?auto=format&fit=crop&q=80&w=1200', 'active'),
+  (2, 'Bohemian',    'bohemian',     'Boho chic, floral patterns, and earthy relaxed styles for an effortless look.',       'https://images.unsplash.com/photo-1550614000-4b95d466f28b?auto=format&fit=crop&q=80&w=1200', 'active'),
+  (3, 'Casuals',     'casuals',      'Baggy fits, everyday casual wear, and structured basics for teens and young adults.',  'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1200', 'active')
+ON CONFLICT (id) DO UPDATE SET
+  hero_image = EXCLUDED.hero_image,
+  description = EXCLUDED.description,
+  updated_at = NOW();
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
@@ -151,3 +154,21 @@ ALTER TABLE merchants ADD COLUMN IF NOT EXISTS facebook TEXT;
 ALTER TABLE merchants ADD COLUMN IF NOT EXISTS instagram TEXT;
 ALTER TABLE merchants ADD COLUMN IF NOT EXISTS best_contact_method TEXT;
 ALTER TABLE merchants ADD COLUMN IF NOT EXISTS look_id INTEGER REFERENCES looks(id);
+
+-- Categories image/swatch for admin-managed tiles
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS image TEXT;
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS swatch JSONB DEFAULT '["#ccc","#aaa"]'::jsonb;
+
+-- Seed categories if empty
+INSERT INTO categories (id, label, image, swatch)
+VALUES
+  ('maxi-dresses', 'Maxi Dresses', 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=900&q=85&auto=format&fit=crop', '["#C9B8A8","#A8854A"]'),
+  ('kaftans', 'Kaftans', 'https://images.unsplash.com/photo-1485518882345-15568b007407?w=900&q=85&auto=format&fit=crop', '["#E8D9C4","#7A6450"]'),
+  ('tops-blouses', 'Tops & Blouses', 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=900&q=85&auto=format&fit=crop', '["#D8C8B8","#8E7558"]'),
+  ('coats-jackets', 'Coats & Jackets', 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=900&q=85&auto=format&fit=crop', '["#6B5B4A","#2A2520"]'),
+  ('bags-accessories', 'Bags & Accessories', 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=900&q=85&auto=format&fit=crop', '["#A8854A","#5C4632"]'),
+  ('jewellery', 'Jewellery', 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=900&q=85&auto=format&fit=crop', '["#C9A84C","#E8D4B8"]')
+ON CONFLICT (id) DO UPDATE SET
+  label = EXCLUDED.label,
+  image = COALESCE(categories.image, EXCLUDED.image),
+  swatch = COALESCE(categories.swatch, EXCLUDED.swatch);

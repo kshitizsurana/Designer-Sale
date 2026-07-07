@@ -163,8 +163,8 @@ function MerchantBulkUploadModal({ onClose, onComplete }) {
       const fd = new FormData();
       fd.append('file', file);
       
-      const token = localStorage.getItem('ds_token');
-      const res = await fetch('https://designer-sale.vercel.app/api/merchants/bulk', {
+      const token = localStorage.getItem('ds_admin_token');
+      const res = await fetch('/api/merchants/bulk', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: fd
@@ -209,7 +209,7 @@ function MerchantBulkUploadModal({ onClose, onComplete }) {
   );
 }
 
-function AdminMerchants({ toast }) {
+function AdminMerchants({ toast, initialAction, onActionHandled }) {
   const [merchants, setMerchants] = useMState([]);
   const [products, setProducts] = useMState([]);
   const [looks, setLooks] = useMState([]);
@@ -237,6 +237,14 @@ function AdminMerchants({ toast }) {
     }
   }
   useMEffect(() => { refresh(); }, []);
+
+  useMEffect(() => {
+    if (initialAction === 'add') {
+      setEditItem(null);
+      setShowForm(true);
+      onActionHandled && onActionHandled();
+    }
+  }, [initialAction]);
 
   const filtered = useMemo_M(() => {
     return merchants.filter(m => {

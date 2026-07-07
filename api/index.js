@@ -72,32 +72,36 @@ app.get('/api/looks', async (req, res) => {
     res.json(data);
 });
 
+function pickLookRow(body) {
+    const {
+        name, slug, description, hero_image, status,
+        tagline, keywords, feature_title, feature_body, feature_cta,
+    } = body;
+    return {
+        name, slug, description, hero_image, status: status || 'active',
+        tagline, keywords, feature_title, feature_body, feature_cta,
+        updated_at: new Date().toISOString(),
+    };
+}
+
 app.post('/api/looks', authenticateToken, async (req, res) => {
-    const { name, slug, description, hero_image, status } = req.body;
-    
-    // Auto-generate ID if none provided by looking at max id
     let id = req.body.id;
     if (!id) {
         const { data: allLooks } = await supabase.from('looks').select('id');
         const maxId = (allLooks && allLooks.length > 0) ? Math.max(...allLooks.map(l => l.id)) : 0;
         id = maxId + 1;
     }
-    
-    const { error } = await supabase.from('looks').insert([{
-        id, name, slug, description, hero_image, status: status || 'active', updated_at: new Date().toISOString()
-    }]);
+    const row = { id, ...pickLookRow(req.body) };
+    const { error } = await supabase.from('looks').insert([row]);
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ id, name, slug, description, hero_image, status: status || 'active' });
+    res.json(row);
 });
 
 app.put('/api/looks/:id', authenticateToken, async (req, res) => {
-    const { name, slug, description, hero_image, status } = req.body;
-    const { error } = await supabase.from('looks').update({
-        name, slug, description, hero_image, status, updated_at: new Date().toISOString()
-    }).eq('id', req.params.id);
-    
+    const row = pickLookRow(req.body);
+    const { error } = await supabase.from('looks').update(row).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ id: parseInt(req.params.id), ...req.body });
+    res.json({ id: parseInt(req.params.id, 10), ...req.body });
 });
 
 app.delete('/api/looks/:id', authenticateToken, async (req, res) => {
@@ -167,11 +171,22 @@ app.put('/api/collections/:id/products', authenticateToken, async (req, res) => 
     res.json({ success: true });
 });
 
-// --- CATEGORIES (Public) ---
+// --- CATEGORIES (Public Read, Protected Write) ---
 app.get('/api/categories', async (req, res) => {
     const { data, error } = await supabase.from('categories').select('*');
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
+});
+
+app.put('/api/categories/:id', authenticateToken, async (req, res) => {
+    const { label, image, swatch } = req.body;
+    const updates = {};
+    if (label !== undefined) updates.label = label;
+    if (image !== undefined) updates.image = image;
+    if (swatch !== undefined) updates.swatch = swatch;
+    const { error } = await supabase.from('categories').update(updates).eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ id: req.params.id, ...updates });
 });
 
 // --- MERCHANTS (Public Read, Protected Write) ---

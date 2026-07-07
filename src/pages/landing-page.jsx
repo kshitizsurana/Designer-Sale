@@ -5,6 +5,9 @@ const { useState, useEffect, useMemo } = React;
 function LandingPage({ landingPageId, data, wishlist, onToggleWishlist, onShop, onNav, cardVariant }) {
   const pageData = useMemo(() => {
     if (!data?.landing_pages) return null;
+    if (window.DSUtils && window.DSUtils.resolveLandingPage) {
+      return window.DSUtils.resolveLandingPage(data.landing_pages, landingPageId);
+    }
     return data.landing_pages.find(lp => lp.id === landingPageId) || null;
   }, [data, landingPageId]);
 
@@ -12,7 +15,11 @@ function LandingPage({ landingPageId, data, wishlist, onToggleWishlist, onShop, 
     if (!pageData || !data?.products) return [];
     return data.products.filter(p => {
       if (pageData.products && pageData.products.includes(p.id)) return true;
-      if (pageData.look_id && p.look_id === pageData.look_id) return true;
+      if (pageData.look_id) {
+        if (p.look_id === pageData.look_id) return true;
+        const pMerchant = data.merchants?.find(m => m.id === p.merchantId);
+        if (pMerchant && pMerchant.look_id === pageData.look_id) return true;
+      }
       return false;
     });
   }, [pageData, data]);
@@ -24,8 +31,8 @@ function LandingPage({ landingPageId, data, wishlist, onToggleWishlist, onShop, 
   if (!pageData) {
     return (
       <div className="page" style={{ padding: 100, textAlign: 'center' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, marginBottom: 16 }}>Sale not found.</h2>
-        <p style={{ color: 'var(--ink-soft)', marginBottom: 32 }}>This curated sale may have ended or moved.</p>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 32, marginBottom: 16 }}>Page not found.</h2>
+        <p style={{ color: 'var(--ink-soft)', marginBottom: 32 }}>This page may have moved or is no longer available.</p>
         <button className="btn btn-ink" onClick={() => onNav('home')}>Back to Home</button>
       </div>
     );

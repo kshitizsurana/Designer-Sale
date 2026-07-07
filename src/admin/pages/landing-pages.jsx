@@ -36,6 +36,8 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
     return allProducts.filter(p => !q || p.title.toLowerCase().includes(q.toLowerCase()) || p.brand?.toLowerCase().includes(q.toLowerCase()));
   }, [allProducts, q]);
 
+  const previewSlug = (window.DSUtils && window.DSUtils.slugifyTitle(form.title)) || (form.title || 'july-sales').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
   return (
     <div className="admin-modal-overlay" onClick={onClose}>
       <div className="admin-modal" style={{ width: 600, maxWidth: '90%' }} onClick={e => e.stopPropagation()}>
@@ -46,9 +48,9 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
         <form onSubmit={submit} style={{ display: 'contents' }}>
           <div className="admin-modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
             <div className="form-group">
-              <label className="form-label">URL Slug / Title <span>*</span></label>
+              <label className="form-label">Title <span>*</span></label>
               <input className={`form-input ${errors.title ? 'error' : ''}`} value={form.title || ''} onChange={e => set('title', e.target.value)} placeholder="e.g. July Sales" />
-              <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Used for the URL: #/collections/<strong>{form.title ? form.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'july-sales'}</strong></p>
+              <p style={{ fontSize: 11, color: 'var(--ink-soft)', marginTop: 4 }}>Preview URL: #/landing-page/{landingPage?.id || previewSlug}</p>
               {errors.title && <div className="form-error">{errors.title}</div>}
             </div>
             
@@ -64,7 +66,7 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
 
             <div className="form-group">
               <label className="form-label">Fashion Look</label>
-              <select className="form-input admin-select" value={form.look_id || ''} onChange={e => set('look_id', parseInt(e.target.value) || '')} style={{ appearance: 'auto' }}>
+              <select className="form-input admin-select" value={form.look_id || ''} onChange={e => set('look_id', parseInt(e.target.value, 10) || '')} style={{ appearance: 'auto' }}>
                 <option value="">Select a look...</option>
                 {window._adminLooks?.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
@@ -78,33 +80,26 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
               </select>
             </div>
 
-            <div className="form-group" style={{ marginTop: 24 }}>
-              <label className="form-label">Tag Products ({form.products.length} selected)</label>
-              <input className="form-input" placeholder="Search products..." value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 12 }} />
-              <div style={{ maxHeight: 300, overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: 8 }}>
-                {filteredProducts.map(p => {
-                  const isSelected = form.products.includes(p.id);
-                  return (
-                    <div key={p.id} onClick={() => toggleProduct(p.id)} style={{ display: 'flex', alignItems: 'center', padding: '8px 12px', borderBottom: '1px solid var(--border-light)', cursor: 'pointer', background: isSelected ? 'var(--blush-soft)' : '#fff' }}>
-                      <input type="checkbox" checked={isSelected} readOnly style={{ marginRight: 12 }} />
-                      <img src={p.image || ''} style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 4, marginRight: 12, background: '#eee' }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.title}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{p.brand}</div>
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 600, marginLeft: 12 }}>${p.sale}</div>
-                    </div>
-                  );
-                })}
+            <div className="form-group">
+              <label className="form-label">Tagged Products ({form.products.length})</label>
+              <div className="admin-search" style={{ marginBottom: 12 }}>
+                <AIcon.Search />
+                <input value={q} onChange={e => setQ(e.target.value)} placeholder="Search products to tag..." />
+              </div>
+              <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid var(--line)', padding: 8 }}>
+                {filteredProducts.slice(0, 50).map(p => (
+                  <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 4px', cursor: 'pointer', fontSize: 13 }}>
+                    <input type="checkbox" checked={form.products.includes(p.id)} onChange={() => toggleProduct(p.id)} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</span>
+                    <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{p.brand}</span>
+                  </label>
+                ))}
               </div>
             </div>
-
           </div>
-          <div className="admin-modal-footer">
-            <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-gold btn-sm">
-              {landingPage ? 'Save changes' : 'Create page'}
-            </button>
+          <div className="admin-modal-foot">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-gold">{landingPage ? 'Save changes' : 'Create page'}</button>
           </div>
         </form>
       </div>
@@ -112,10 +107,9 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
   );
 }
 
-function AdminLandingPages({ toast }) {
+function AdminLandingPages({ toast, initialAction, onActionHandled }) {
   const [landingPages, setLandingPages] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
-  const [looks, setLooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editItem, setEditItem] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -124,22 +118,13 @@ function AdminLandingPages({ toast }) {
   async function refresh() {
     setLoading(true);
     try {
-        const token = localStorage.getItem('ds_token');
-        const [lpRes, p, l] = await Promise.all([
-          fetch('/api/landing-pages', { headers: { 'Authorization': `Bearer ${token}` } }),
+        const [lp, p, l] = await Promise.all([
+          API.landingPages.getAll(),
           API.products.getAll(),
           API.looks.getAll()
         ]);
-        const lp = await lpRes.json();
-        if (lp.error || !Array.isArray(lp)) {
-            console.error('Landing pages fetch error:', lp);
-            setLandingPages([]);
-            toast('Warning: Could not load landing pages (Table might be missing)', 'error');
-        } else {
-            setLandingPages(lp);
-        }
+        setLandingPages(Array.isArray(lp) ? lp : []);
         setAllProducts(p);
-        setLooks(l);
         window._adminLooks = l;
     } catch(e) {
         toast('Failed to load landing pages', 'error');
@@ -150,24 +135,21 @@ function AdminLandingPages({ toast }) {
 
   useEffect(() => { refresh(); }, []);
 
+  useEffect(() => {
+    if (initialAction === 'add') {
+      setEditItem(null);
+      setShowForm(true);
+      onActionHandled && onActionHandled();
+    }
+  }, [initialAction]);
+
   async function handleSave(data) {
     try {
-        const token = localStorage.getItem('ds_token');
         if (editItem) {
-          const res = await fetch(`https://designer-sale.vercel.app/api/landing-pages/${editItem.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(data)
-          });
-          if (!res.ok) throw new Error('Update failed');
+          await API.landingPages.update(editItem.id, data);
           toast('Landing page updated', 'success');
         } else {
-          const res = await fetch(`https://designer-sale.vercel.app/api/landing-pages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(data)
-          });
-          if (!res.ok) throw new Error('Create failed');
+          await API.landingPages.create(data);
           toast('Landing page created', 'success');
         }
         setShowForm(false);
@@ -180,13 +162,8 @@ function AdminLandingPages({ toast }) {
 
   async function handleDelete() {
     try {
-        const token = localStorage.getItem('ds_token');
-        const res = await fetch(`https://designer-sale.vercel.app/api/landing-pages/${deleteItem.id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Delete failed');
-        toast(`Landing page deleted`, 'success');
+        await API.landingPages.delete(deleteItem.id);
+        toast('Landing page deleted', 'success');
         setDeleteItem(null);
         refresh();
     } catch(e) {
@@ -227,14 +204,14 @@ function AdminLandingPages({ toast }) {
                   <button className="btn btn-gold btn-sm" onClick={() => { setEditItem(null); setShowForm(true); }}><AIcon.Plus /> Create page</button>
                 </div>
               </td></tr>
-            ) : Array.isArray(landingPages) && landingPages.map(lp => (
+            ) : landingPages.map(lp => (
               <tr key={lp.id}>
                 <td className="col-thumb">
                   {lp.image ? <img src={lp.image} className="thumb-img" style={{ width: 60 }} alt="" /> : <div className="thumb-ph">Img</div>}
                 </td>
                 <td>
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>{lp.title}</div>
-                  <a href={`/#/collections/${lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`} target="_blank" style={{ fontSize: 11, color: 'var(--gold-deep)', textDecoration: 'none' }}>View Page ↗</a>
+                  <a href={`/#/landing-page/${lp.id}`} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: 'var(--gold-deep)', textDecoration: 'none' }}>View Page ↗</a>
                 </td>
                 <td style={{ fontSize: 12, color: 'var(--ink-soft)', maxWidth: 200 }}>
                   {lp.short_description || 'No description'}

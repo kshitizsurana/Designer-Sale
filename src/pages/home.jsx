@@ -271,7 +271,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                 <div className="eyebrow" style={{ marginBottom: 10 }}>Curated for you</div>
                 <h2>Sales in {look.name}</h2>
               </div>
-              <a className="section-head-link" href={`#/looks/${look.slug}`} onClick={(e)=>{e.preventDefault();onNav('look', null, null, look.slug);}}>View All</a>
+              <a className="section-head-link" href={`#/look/${look.slug}`} onClick={(e)=>{e.preventDefault();onNav('look', null, null, look.slug);}}>View All</a>
             </div>
             <div className="product-grid">
               {displayProducts.map(p => (

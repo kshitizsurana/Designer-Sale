@@ -78,7 +78,7 @@ function BrandFormModal({ brand, onSave, onClose }) {
   );
 }
 
-function AdminBrands({ toast }) {
+function AdminBrands({ toast, initialAction, onActionHandled }) {
   const [brands, setBrands] = useBrState([]);
   const [products, setProducts] = useBrState([]);
   const [q, setQ] = useBrState('');
@@ -100,6 +100,14 @@ function AdminBrands({ toast }) {
     }
   }
   useBrEffect(() => { refresh(); }, []);
+
+  useBrEffect(() => {
+    if (initialAction === 'add') {
+      setEditItem(null);
+      setShowForm(true);
+      onActionHandled && onActionHandled();
+    }
+  }, [initialAction]);
 
   const filtered = useBrMemo(() => {
     if (!q) return brands;

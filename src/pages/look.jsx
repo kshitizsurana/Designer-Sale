@@ -77,7 +77,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   }
 
   const cfg = LOOK_CONFIG[look.slug] || LOOK_CONFIG['formal-wear'];
-  const allLookProducts = data.products.filter(p => p.look_id === look.id);
+  const allLookProducts = data.products.filter(p => p.look_id === look.id || (data.merchants.find(m => m.id === p.merchantId)?.look_id === look.id));
   const lookMerchants = data.merchants.filter(m => m.look_id === look.id);
 
   // Derive active collections for this look
@@ -96,6 +96,19 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   const featureCta = look.feature_cta || cfg.feature.cta;
 
   const otherLooks = data.looks.filter(l => l.id !== look.id);
+
+  const categoryGroups = useLookMemo(() => {
+    const groups = new Map();
+    allLookProducts.forEach(p => {
+      const cat = data.categories.find(c => c.id === p.category);
+      if (!cat) return;
+      if (!groups.has(cat.id)) groups.set(cat.id, { category: cat, products: [] });
+      groups.get(cat.id).products.push(p);
+    });
+    return Array.from(groups.values())
+      .filter(g => g.products.length > 0)
+      .sort((a, b) => b.products.length - a.products.length);
+  }, [allLookProducts, data.categories]);
 
   const avgSaving = allLookProducts.length > 0 
     ? Math.round(allLookProducts.reduce((sum, p) => sum + (p.discountPct || 0), 0) / allLookProducts.length) 
@@ -189,7 +202,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                   <h2>{lp.title}</h2>
                   {lp.short_description && <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{lp.short_description}</p>}
                 </div>
-                <button className="section-head-link" onClick={() => onNav('landing-page', null, null, lp.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'))}>
+                <button className="section-head-link" onClick={() => onNav('landing-page', null, null, lp.id)}>
                   View Campaign <Icon.ArrowRight />
                 </button>
               </div>
@@ -244,6 +257,29 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
         )}
       </div>
 
+      {/* Category-wise product sections */}
+      {categoryGroups.map((group, idx) => (
+        <React.Fragment key={group.category.id}>
+          <hr className="divider-rule" />
+          <section className="section container-wide">
+            <div className="section-head">
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>{look.name}</div>
+                <h2>{group.category.label}</h2>
+              </div>
+              <button className="section-head-link" onClick={() => onNav('category', group.category.id)}>
+                View all {group.products.length} <Icon.ArrowRight />
+              </button>
+            </div>
+            <div className="product-grid">
+              {group.products.slice(0, 8).map(p => (
+                <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
+              ))}
+            </div>
+          </section>
+        </React.Fragment>
+      ))}
+
       {/* ════════════════════════════════
           EDITORIAL SPLIT — look feature
       ════════════════════════════════ */}
@@ -295,59 +331,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
 
 
       {/* ════════════════════════════════
-          EXPLORE OTHER LOOKS
-      ════════════════════════════════ */}
-      {otherLooks.length > 0 && (
-        <>
-          <hr className="divider-rule" />
-          <section className="section container-wide">
-            <div className="section-head" style={{ marginBottom: 32 }}>
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>Discover more styles</div>
-                <h2>Explore Other <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>Looks</em></h2>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${otherLooks.length}, 1fr)`, gap: 20 }}>
-              {otherLooks.map(l => {
-                const oCfg = LOOK_CONFIG[l.slug] || {};
-                const lCount = data.products.filter(p => p.look_id === l.id).length;
-                return (
-                  <button
-                    key={l.id}
-                    className="tile fade-in"
-                    style={{ minHeight: 340, border: '1px solid var(--line)', position: 'relative', overflow: 'hidden' }}
-                    onClick={() => onNav('look', null, null, l.slug)}
-                  >
-                    {l.hero_image && (
-                      <img
-                        src={l.hero_image}
-                        alt={l.name}
-                        loading="lazy"
-                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 600ms ease' }}
-                        onError={e => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: oCfg.palette ? oCfg.palette.hero : '#000', opacity: l.hero_image ? 0.45 : 0.9, mixBlendMode: 'multiply' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, textAlign: 'left', color: '#fff' }}>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: oCfg.palette ? oCfg.palette.accent : 'var(--gold-soft)', marginBottom: 8 }}>Shop by Style</div>
-                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 28, marginBottom: 8, lineHeight: 1.1 }}>{l.name}</h3>
-                      <p style={{ fontSize: 13, opacity: 0.8, marginBottom: 16, lineHeight: 1.4 }}>{oCfg.tagline || l.description}</p>
-                      <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 6, color: oCfg.palette ? oCfg.palette.accent : '#fff' }}>
-                        View {l.name} <Icon.ArrowRight />
-                      </span>
-                      {lCount > 0 && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginTop: 8 }}>{lCount} items on sale</div>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        </>
-      )}
-
-      {/* ════════════════════════════════
-          BOUTIQUES (Paginated)
+          BOUTIQUES (Paginated) — before Explore Other Looks
       ════════════════════════════════ */}
       {lookMerchants.length > 0 && (
         <>
@@ -380,7 +364,6 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                 </button>
               ))}
             </div>
-            {/* Pagination */}
             {lookMerchants.length > BOUTIQUES_PER_PAGE && (
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 32 }}>
                 <button
@@ -411,6 +394,56 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                 </button>
               </div>
             )}
+          </section>
+        </>
+      )}
+
+      {/* ════════════════════════════════
+          EXPLORE OTHER LOOKS (compact tiles)
+      ════════════════════════════════ */}
+      {otherLooks.length > 0 && (
+        <>
+          <hr className="divider-rule" />
+          <section className="section container-wide">
+            <div className="section-head" style={{ marginBottom: 24 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>Discover more styles</div>
+                <h2>Explore Other <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>Looks</em></h2>
+              </div>
+            </div>
+            <div className="look-explore-grid">
+              {otherLooks.map(l => {
+                const oCfg = LOOK_CONFIG[l.slug] || {};
+                const lCount = data.products.filter(p => p.look_id === l.id).length;
+                return (
+                  <button
+                    key={l.id}
+                    className="tile fade-in look-explore-tile"
+                    onClick={() => onNav('look', null, null, l.slug)}
+                  >
+                    {l.hero_image && (
+                      <img
+                        src={l.hero_image}
+                        alt={l.name}
+                        loading="lazy"
+                        className="look-explore-img"
+                        onError={e => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
+                    <div className="look-explore-overlay" style={{ background: oCfg.palette ? oCfg.palette.hero : '#000', opacity: l.hero_image ? 0.45 : 0.9 }} />
+                    <div className="look-explore-content">
+                      <div className="look-explore-eyebrow" style={{ color: oCfg.palette ? oCfg.palette.accent : 'var(--gold-soft)' }}>Shop by Style</div>
+                      <h3 className="look-explore-title">{l.name}</h3>
+                      <p className="look-explore-tagline">{l.tagline || oCfg.tagline || l.description}</p>
+                      <span className="look-explore-cta" style={{ color: oCfg.palette ? oCfg.palette.accent : '#fff' }}>
+                        View {l.name} <Icon.ArrowRight />
+                      </span>
+                      {lCount > 0 && <div className="look-explore-count">{lCount} items on sale</div>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </section>
         </>
       )}

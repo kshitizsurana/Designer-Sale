@@ -120,6 +120,12 @@ function AdminApp() {
   });
   const [toast, setToast] = useAdminState(null);
   const [stats, setStats] = useAdminState({});
+  const [pageAction, setPageAction] = useAdminState(null);
+
+  function navigateAdmin(page, action = null) {
+    setPageAction(action);
+    setPage(page);
+  }
 
   // Sync state to URL — always /admin/<page>
   useAdminEffect(() => {
@@ -225,15 +231,15 @@ function AdminApp() {
           </div>
         </div>
         <div className="admin-content">
-            {page === 'dashboard' && <AdminDashboard stats={stats} toast={showToast} />}
-            {page === 'looks' && <AdminLooks toast={showToast} />}
-            {page === 'collections' && <AdminCollections toast={showToast} />}
-            {page === 'merchants' && <AdminMerchants toast={showToast} />}
-            {page === 'brands' && <AdminBrands toast={showToast} />}
-            {page === 'products' && <AdminProducts toast={showToast} />}
-            {page === 'landing-pages' && <AdminLandingPages toast={showToast} />}
+            {page === 'dashboard' && <AdminDashboard stats={stats} toast={showToast} onNav={navigateAdmin} />}
+            {page === 'looks' && <AdminLooks toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
+            {page === 'collections' && <AdminCollections toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
+            {page === 'merchants' && <AdminMerchants toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
+            {page === 'brands' && <AdminBrands toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
+            {page === 'products' && <AdminProducts toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
+            {page === 'landing-pages' && <AdminLandingPages toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
             {page === 'upload' && <AdminBulkUpload toast={showToast} />}
-            {page === 'blogs' && <AdminBlogs toast={showToast} />}
+            {page === 'blogs' && <AdminBlogs toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
         </div>
       </div>
 

@@ -6,101 +6,42 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ────────────────────────────────────────────────────────────
-//  Boutique configs from DesignerSale.xlsx
-// ────────────────────────────────────────────────────────────
+const MAX_PRODUCTS_PER_BOUTIQUE = 6;
+
+// All 17 boutiques — ~5-6 products each, distributed across styles
 const BOUTIQUES = [
-  {
-    name: 'Calexico',
-    website: 'calexico.com.au',
-    saleCollection: 'sale',
-    allCollection: 'all',
-    city: 'Brisbane', suburb: 'Fortitude Valley', state: 'QLD',
-    instagram: '@calexicofusion',
-    description: 'International luxury fashion, effortless styling, and premium multi-brand curation.',
-    style: 'formal-wear',
-  },
-  {
-    name: 'Hansen & Gretel',
-    website: 'hansenandgretel.com',
-    saleCollection: 'sale',
-    allCollection: 'all',
-    city: 'Sydney', suburb: 'Paddington', state: 'NSW',
-    instagram: '@hansenandgretel',
-    description: 'Chic contemporary styling, unique prints, and feminine everyday staples.',
-    style: 'casuals',
-  },
-  {
-    name: 'Flannel',
-    website: 'flannel.com.au',
-    saleCollection: 'sale',
-    allCollection: 'all',
-    city: 'Sydney', suburb: 'Paddington', state: 'NSW',
-    instagram: '@flannelluxe',
-    description: 'Effortless bohemian-luxe essentials focusing on flowing silks, fine knits, and romantic slips.',
-    style: 'bohemian',
-  },
-  {
-    name: 'Viktoria & Woods',
-    website: 'viktoriaandwoods.com.au',
-    saleCollection: 'sale',
-    allCollection: 'all',
-    city: 'Sydney', suburb: 'Paddington', state: 'NSW',
-    instagram: '@viktoriaandwoods',
-    description: 'Premium, tailored, smart casual.',
-    style: 'formal-wear',
-  },
-  {
-    name: 'St. Agni',
-    website: 'st-agni.com',
-    saleCollection: 'sale',
-    allCollection: 'all',
-    city: 'Sydney', suburb: 'Paddington', state: 'NSW',
-    instagram: '@stagnistudio',
-    description: 'Formal, minimalistic.',
-    style: 'formal-wear',
-  },
-  {
-    name: 'Elysian Collective',
-    website: 'elysiancollective.com.au',
-    saleCollection: 'sale',
-    allCollection: 'collections/new-arrivals',
-    city: 'Sydney', suburb: 'Narrabeen', state: 'NSW',
-    instagram: '@elysiancollective_',
-    description: 'Casual, colorful.',
-    style: 'casuals',
-  },
-  {
-    name: 'Mode Sportif',
-    website: 'modesportif.com',
-    saleCollection: 'sale',
-    allCollection: 'all',
-    city: 'Sydney', suburb: 'Paddington', state: 'NSW',
-    instagram: '@modesportif',
-    description: 'Elegant contemporary designer outfits, resort wear, and relaxed luxury tailoring.',
-    style: 'bohemian',
-  },
+  { id: 'calexico', name: 'Calexico', website: 'calexico.com.au', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'parlour-x', name: 'Parlour X', website: 'parlourx.com.au', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'byfreer', name: 'byfreer', website: 'byfreer.com', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'grace-melbourne', name: 'GRACE Melbourne', website: 'gracemelbourne.com.au', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'duchess-boutique', name: 'Duchess Boutique', website: 'duchessboutique.com.au', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'riada-concept', name: 'Riada Concept', website: 'riadaconcept.com', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'aquel-boutique', name: 'Aquel Boutique', website: 'aquel.com.au', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'st-agni', name: 'St. Agni', website: 'st-agni.com', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'viktoria-and-woods', name: 'Viktoria & Woods', website: 'viktoriaandwoods.com.au', style: 'formal-wear', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'qurated', name: 'qurated', website: 'qurated.com.au', style: 'bohemian', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'mode-sportif', name: 'Mode Sportif', website: 'modesportif.com', style: 'bohemian', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'flannel', name: 'Flannel', website: 'flannel.com.au', style: 'bohemian', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'the-standard-store', name: 'The Standard Store', website: 'thestandardstore.com.au', style: 'casuals', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'hansen-and-gretel', name: 'Hansen & Gretel', website: 'hansenandgretel.com', style: 'casuals', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'koriah', name: 'Koriah', website: 'koriah.com.au', style: 'casuals', saleCollection: 'sale', allCollection: 'all' },
+  { id: 'elysian-collective', name: 'Elysian Collective', website: 'elysiancollective.com.au', style: 'casuals', saleCollection: 'collections/new-arrivals', allCollection: 'collections/new-arrivals' },
+  { id: 'store-moss', name: 'Store Moss', website: 'storemoss.com.au', style: 'casuals', saleCollection: 'sale', allCollection: 'all' },
 ];
 
-// Category guessing from product_type / tags
-function guessCategory(product) {
-  const t = ((product.product_type || '') + ' ' + (product.tags || []).join(' ')).toLowerCase();
-  if (t.includes('dress') || t.includes('gown')) return 'dresses';
-  if (t.includes('top') || t.includes('blouse') || t.includes('shirt')) return 'tops';
-  if (t.includes('trouser') || t.includes('pant') || t.includes('jean')) return 'pants';
-  if (t.includes('skirt')) return 'skirts';
-  if (t.includes('jacket') || t.includes('coat') || t.includes('blazer') || t.includes('outerwear')) return 'jackets';
-  if (t.includes('shoe') || t.includes('heel') || t.includes('boot') || t.includes('sandal')) return 'shoes';
-  if (t.includes('bag') || t.includes('handbag') || t.includes('purse')) return 'bags';
-  if (t.includes('jewel') || t.includes('necklace') || t.includes('earring') || t.includes('bracelet')) return 'accessories';
-  if (t.includes('swimwear') || t.includes('bikini')) return 'swimwear';
-  return 'tops';
+function slugifyBrand(name) {
+  return String(name || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'unknown';
 }
 
-// Style guess from look_id
-function lookStyle(style) {
-  const map = { 'formal-wear': 'formal', 'bohemian': 'bohemian', 'casuals': 'casual' };
-  return map[style] || 'casual';
+function guessCategory(product) {
+  const t = ((product.product_type || '') + ' ' + (product.tags || []).join(' ')).toLowerCase();
+  if (t.includes('kaftan') || t.includes('caftan')) return 'kaftans';
+  if (t.includes('dress') || t.includes('gown')) return 'maxi-dresses';
+  if (t.includes('jewel') || t.includes('necklace') || t.includes('earring')) return 'jewellery';
+  if (t.includes('bag') || t.includes('handbag')) return 'bags-accessories';
+  if (t.includes('jacket') || t.includes('coat') || t.includes('blazer')) return 'coats-jackets';
+  if (t.includes('top') || t.includes('blouse') || t.includes('shirt')) return 'tops-blouses';
+  return 'tops-blouses';
 }
 
 function fetchJson(url) {
@@ -126,10 +67,10 @@ function fetchJson(url) {
 
 async function fetchBoutiqueProducts(boutique) {
   const urls = [
-    `https://${boutique.website}/collections/${boutique.saleCollection}/products.json?limit=20`,
-    `https://www.${boutique.website}/collections/${boutique.saleCollection}/products.json?limit=20`,
-    `https://${boutique.website}/collections/${boutique.allCollection}/products.json?limit=20`,
-    `https://www.${boutique.website}/collections/${boutique.allCollection}/products.json?limit=20`,
+    `https://${boutique.website}/collections/${boutique.saleCollection}/products.json?limit=${MAX_PRODUCTS_PER_BOUTIQUE}`,
+    `https://www.${boutique.website}/collections/${boutique.saleCollection}/products.json?limit=${MAX_PRODUCTS_PER_BOUTIQUE}`,
+    `https://${boutique.website}/collections/${boutique.allCollection}/products.json?limit=${MAX_PRODUCTS_PER_BOUTIQUE}`,
+    `https://www.${boutique.website}/collections/${boutique.allCollection}/products.json?limit=${MAX_PRODUCTS_PER_BOUTIQUE}`,
   ];
 
   for (const url of urls) {
@@ -137,14 +78,14 @@ async function fetchBoutiqueProducts(boutique) {
     const json = await fetchJson(url);
     if (json && json.products && json.products.length > 0) {
       console.log(`  ✓ Got ${json.products.length} products`);
-      return json.products;
+      return json.products.slice(0, MAX_PRODUCTS_PER_BOUTIQUE);
     }
   }
-  console.log(`  ✗ No products found`);
+  console.log('  ✗ No products found');
   return [];
 }
 
-function transformProduct(shopifyProduct, boutique, merchantId) {
+function transformProduct(shopifyProduct, boutique, merchantId, lookId, brandId) {
   const variant = shopifyProduct.variants?.[0];
   if (!variant) return null;
 
@@ -171,7 +112,9 @@ function transformProduct(shopifyProduct, boutique, merchantId) {
     id: safeId,
     title: shopifyProduct.title,
     category: guessCategory(shopifyProduct),
-    merchantid: merchantId || null,
+    brandid: brandId,
+    merchantid: merchantId,
+    look_id: lookId,
     rrp: Math.round(rrp),
     sale: Math.round(salePrice),
     discountpct,
@@ -180,71 +123,75 @@ function transformProduct(shopifyProduct, boutique, merchantId) {
     image,
     added: Date.now(),
     description: (shopifyProduct.body_html || '').replace(/<[^>]*>/g, '').slice(0, 300) || null,
-    // Store style on object for collection assignment (not persisted to DB)
     _style: boutique.style,
   };
 }
 
-async function run() {
-  console.log('=== DesignerSale Product Seeder ===\n');
+async function ensureBrand(vendorName) {
+  const id = 'b_' + slugifyBrand(vendorName);
+  const { data: existing } = await supabase.from('brands').select('id').eq('id', id).maybeSingle();
+  if (existing) return id;
+  const { error } = await supabase.from('brands').upsert([{ id, name: vendorName || 'Unknown', country: 'AU' }]);
+  if (error) console.warn(`  Brand upsert warning for ${vendorName}:`, error.message);
+  return id;
+}
 
-  // 1. Load looks
+async function run() {
+  console.log('=== DesignerSale Product Seeder (17 boutiques, max 6 each) ===\n');
+
   const { data: looks } = await supabase.from('looks').select('*');
   if (!looks?.length) { console.error('No looks found'); process.exit(1); }
   const lookMap = {};
   looks.forEach(l => { lookMap[l.slug] = l.id; });
-  console.log('Looks:', Object.keys(lookMap));
 
-  // 2. Load merchants
-  const { data: merchants } = await supabase.from('merchants').select('id, name');
+  const { data: merchants } = await supabase.from('merchants').select('id, name, look_id');
   const merchantMap = {};
-  (merchants || []).forEach(m => { merchantMap[m.name.toLowerCase()] = m.id; });
+  (merchants || []).forEach(m => { merchantMap[m.name.toLowerCase()] = m; merchantMap[m.id] = m; });
 
-  // 3. DELETE all existing products
-  console.log('\nDeleting all existing products...');
-  // First clear collection_products since they FK reference products
+  console.log('\nClearing existing products...');
   await supabase.from('collection_products').delete().neq('collection_id', -1);
   const { data: existingProds } = await supabase.from('products').select('id');
   if (existingProds?.length) {
-    const ids = existingProds.map(p => p.id);
-    // Delete in batches of 100
-    for (let i = 0; i < ids.length; i += 100) {
-      await supabase.from('products').delete().in('id', ids.slice(i, i + 100));
+    for (let i = 0; i < existingProds.length; i += 100) {
+      await supabase.from('products').delete().in('id', existingProds.slice(i, i + 100).map(p => p.id));
     }
   }
-  console.log('✓ Existing products removed\n');
+  console.log('✓ Cleared\n');
 
-  // 4. Scrape and insert
   let totalInserted = 0;
-  // Track inserted product IDs per style for collection assignment
   const insertedByStyle = { 'formal-wear': [], 'bohemian': [], 'casuals': [] };
+  const perMerchantCount = {};
 
   for (const boutique of BOUTIQUES) {
     console.log(`\n── ${boutique.name} (${boutique.website}) ──`);
-    const merchantId = merchantMap[boutique.name.toLowerCase()] || null;
+    const merchant = merchantMap[boutique.name.toLowerCase()] || merchantMap[boutique.id];
+    const merchantId = merchant?.id || boutique.id;
+    const lookId = merchant?.look_id || lookMap[boutique.style] || null;
 
     const shopifyProducts = await fetchBoutiqueProducts(boutique);
     if (!shopifyProducts.length) continue;
 
-    const transformed = shopifyProducts
-      .map(p => transformProduct(p, boutique, merchantId))
-      .filter(Boolean);
+    const transformed = [];
+    for (const p of shopifyProducts) {
+      const vendor = p.vendor || boutique.name;
+      const brandId = await ensureBrand(vendor);
+      const row = transformProduct(p, boutique, merchantId, lookId, brandId);
+      if (row) transformed.push(row);
+    }
 
     if (!transformed.length) {
       console.log('  No valid products after transform');
       continue;
     }
 
-    // Strip _style before inserting
     const toInsert = transformed.map(({ _style, ...p }) => p);
-
     const { error: insertErr } = await supabase.from('products').upsert(toInsert, { onConflict: 'id' });
     if (insertErr) {
       console.error(`  Insert error: ${insertErr.message}`);
     } else {
       console.log(`  ✓ Inserted ${toInsert.length} products`);
       totalInserted += toInsert.length;
-      // Track IDs per style
+      perMerchantCount[boutique.name] = toInsert.length;
       const style = boutique.style;
       if (insertedByStyle[style]) {
         insertedByStyle[style].push(...toInsert.map(p => p.id));
@@ -253,28 +200,28 @@ async function run() {
   }
 
   console.log(`\n=== Done! Total products inserted: ${totalInserted} ===`);
+  console.log('\nPer boutique:');
+  Object.entries(perMerchantCount).forEach(([name, count]) => console.log(`  ${name}: ${count}`));
 
-  // 5. Populate collections with the new real products
+  // Assign products to collections by style
   console.log('\nAssigning products to collections...');
-  const { data: collections } = await supabase.from('collections').select('id, slug, look_id');
-  const { data: looks2 } = await supabase.from('looks').select('id, slug');
+  const { data: collections } = await supabase.from('collections').select('id, slug, look_id, title');
   const lookSlugById = {};
-  (looks2 || []).forEach(l => { lookSlugById[l.id] = l.slug; });
+  looks.forEach(l => { lookSlugById[l.id] = l.slug; });
 
   for (const col of (collections || [])) {
     const lookSlug = lookSlugById[col.look_id];
     const availableIds = insertedByStyle[lookSlug] || [];
     if (!availableIds.length) continue;
 
-    // Pick up to 12 random products for this collection
-    const shuffled = availableIds.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, Math.min(12, shuffled.length));
+    const shuffled = [...availableIds].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, Math.min(8, shuffled.length));
 
     await supabase.from('collection_products').delete().eq('collection_id', col.id);
     const inserts = selected.map((pid, idx) => ({ collection_id: col.id, product_id: pid, display_order: idx }));
     const { error: cpErr } = await supabase.from('collection_products').insert(inserts);
     if (cpErr) console.error(`  Collection ${col.slug} error: ${cpErr.message}`);
-    else console.log(`  ✓ Assigned ${inserts.length} products to collection ${col.slug}`);
+    else console.log(`  ✓ Assigned ${inserts.length} products to ${col.title}`);
   }
 
   console.log('\nAll done!');

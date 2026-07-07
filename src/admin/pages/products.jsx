@@ -164,7 +164,7 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
 }
 
 
-function AdminProducts({ toast }) {
+function AdminProducts({ toast, initialAction, onActionHandled }) {
   const [products, setProducts] = usePState([]);
   const [categories, setCategories] = usePState([]);
   const [merchants, setMerchants] = usePState([]);
@@ -208,6 +208,14 @@ function AdminProducts({ toast }) {
   }
 
   usePEffect(() => { refresh(); }, []);
+
+  usePEffect(() => {
+    if (initialAction === 'add') {
+      setEditItem(null);
+      setShowForm(true);
+      onActionHandled && onActionHandled();
+    }
+  }, [initialAction]);
 
   const filtered = useMemo_P(() => {
     return products.filter(p => {

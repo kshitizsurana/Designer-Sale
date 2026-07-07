@@ -89,14 +89,14 @@ function AdminDashboard({ onNav, toast }) {
               { label: 'Add new brand',   page: 'brands' },
               { label: 'Bulk CSV upload', page: 'upload' },
             ].map(a => (
-              <button key={a.page + a.label} className={`btn ${a.accent ? 'btn-gold' : 'btn-ghost'}`} style={{ justifyContent: 'flex-start', width: '100%' }} onClick={() => onNav(a.page)}>
+              <button key={a.page + a.label} className={`btn ${a.accent ? 'btn-gold' : 'btn-ghost'}`} style={{ justifyContent: 'flex-start', width: '100%' }} onClick={() => onNav && onNav(a.page, a.page === 'upload' ? null : 'add')}>
                 <AIcon.Plus /> {a.label}
               </button>
             ))}
           </div>
           <div style={{ marginTop: 20, padding: '16px', background: 'var(--bg-card)', border: '1px solid var(--line)' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--ink-muted)', marginBottom: 8 }}>Real Node.js Backend</div>
-            <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>Changes are securely persisted to an SQLite database.</div>
+            <div style={{ fontSize: 12, color: 'var(--ink-soft)', lineHeight: 1.5 }}>Changes are securely persisted to Supabase.</div>
           </div>
         </div>
       </div>

@@ -36,17 +36,23 @@ function App() {
         ]);
 
         const categoryExtras = {
-          'maxi-dresses': { image: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=900&q=85&auto=format&fit=crop', swatch: ['#C9B8A8', '#A8854A'] },
-          'kaftans':      { image: 'https://images.unsplash.com/photo-1485518882345-15568b007407?w=900&q=85&auto=format&fit=crop', swatch: ['#E8D9C4', '#7A6450'] },
-          'tops-blouses': { image: 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=900&q=85&auto=format&fit=crop', swatch: ['#D8C8B8', '#8E7558'] },
-          'coats-jackets':    { image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=900&q=85&auto=format&fit=crop', swatch: ['#6B5B4A', '#2A2520'] },
-          'bags-accessories': { image: 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=900&q=85&auto=format&fit=crop', swatch: ['#A8854A', '#5C4632'] },
-          'jewellery':        { image: 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=900&q=85&auto=format&fit=crop', swatch: ['#C9A84C', '#E8D4B8'] },
+          'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'] },
+          'kaftans':      { swatch: ['#E8D9C4', '#7A6450'] },
+          'tops-blouses': { swatch: ['#D8C8B8', '#8E7558'] },
+          'coats-jackets':    { swatch: ['#6B5B4A', '#2A2520'] },
+          'bags-accessories': { swatch: ['#A8854A', '#5C4632'] },
+          'jewellery':        { swatch: ['#C9A84C', '#E8D4B8'] },
         };
 
         const enrichedCategories = categories.map(c => {
-          const ext = categoryExtras[c.id] || { image: '', swatch: ['#ccc', '#aaa'] };
-          return { ...c, ...ext, count: products.filter(p => p.category === c.id).length };
+          const dbSwatch = Array.isArray(c.swatch) ? c.swatch : (typeof c.swatch === 'string' ? JSON.parse(c.swatch) : null);
+          const ext = categoryExtras[c.id] || { swatch: ['#ccc', '#aaa'] };
+          return {
+            ...c,
+            image: c.image || '',
+            swatch: dbSwatch || ext.swatch,
+            count: products.filter(p => p.category === c.id).length,
+          };
         });
 
         const enrichedMerchants = merchants.map(m => ({

@@ -320,15 +320,9 @@ const REAL_MERCHANTS = [
 async function main() {
   console.log('🔄 Starting real merchant seed...\n');
 
-  // The live database does not currently have these columns, so we strip them
-  const merchantsToInsert = REAL_MERCHANTS.map(m => {
-    const { facebook, instagram, best_contact_method, look_id, ...rest } = m;
-    return rest;
-  });
-
-  // 1. Insert real merchants first (so foreign key constraints pass)
-  console.log(`📦 Inserting ${merchantsToInsert.length} real boutiques...`);
-  const { data: inserted, error: insertErr } = await supabase.from('merchants').upsert(merchantsToInsert).select();
+  // Upsert all merchants with look_id and social fields
+  console.log(`📦 Upserting ${REAL_MERCHANTS.length} real boutiques...`);
+  const { data: inserted, error: insertErr } = await supabase.from('merchants').upsert(REAL_MERCHANTS).select();
   if (insertErr) {
     console.error('❌ Insert failed:', insertErr.message);
     process.exit(1);

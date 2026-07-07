@@ -254,7 +254,7 @@ function AdminLooks({ toast }) {
                   <td><strong style={{ color: 'var(--gold-deep)' }}>{st.products}</strong></td>
                   <td className="col-actions">
                     <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
-                      <a href={`/#/looks/${l.slug}`} target="_blank" rel="noreferrer" className="btn-icon btn btn-ghost btn-xs" title="View"><AIcon.External /></a>
+                      <a href={`/#/look/${l.slug}`} target="_blank" rel="noreferrer" className="btn-icon btn btn-ghost btn-xs" title="View"><AIcon.External /></a>
                       <button className="btn-icon btn btn-ghost btn-xs" title="Edit" onClick={() => { setEditItem(l); setShowForm(true); }}><AIcon.Edit /></button>
                       <button className="btn-icon btn btn-danger btn-xs" title="Delete" onClick={() => setDeleteItem(l)}><AIcon.Trash /></button>
                     </div>
