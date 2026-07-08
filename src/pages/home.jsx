@@ -328,7 +328,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
       {data.looks && data.looks.map((look) => {
         const lookProducts = data.products.filter(p => p.look_id === look.id);
         if (lookProducts.length === 0) return null;
-        const displayProducts = lookProducts.slice(0, 4);
+        const displayProducts = lookProducts.slice(0, 8);
 
         return (
           <section key={look.id} className="section container-wide">
@@ -337,7 +337,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                 <div className="eyebrow" style={{ marginBottom: 10 }}>Curated for you</div>
                 <h2>Sales in {look.name}</h2>
               </div>
-              <a className="section-head-link" href={`#/look/${look.slug}`} onClick={(e)=>{e.preventDefault();onNav('look', null, null, look.slug);}}>View All</a>
+              <a className="section-head-link" href={`#/look/${look.slug}/all`} onClick={(e)=>{e.preventDefault();onNav('look-all', null, null, look.slug);}}>View All</a>
             </div>
             <div className="product-grid">
               {displayProducts.map(p => (

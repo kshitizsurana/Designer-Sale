@@ -155,6 +155,7 @@ function App() {
     else if (page === 'product')      hash = `#/product/${entityId}`;
     else if (page === 'brand')        hash = `#/brand/${entityId}`;
     else if (page === 'merchant')     hash = `#/merchant/${entityId}`;
+    else if (page === 'look-all')     hash = `#/look/${entityId}/all`;
     else if (page === 'look')         hash = `#/look/${entityId}`;
     else if (page === 'landing-page') hash = `#/landing-page/${entityId}`;
     else if (page === 'collection')   hash = `#/collection/${categoryId}/${entityId}`;
@@ -248,13 +249,14 @@ function App() {
 
       {route.page === 'home'      && <HomePage {...commonProps} onEmailSubmit={handleEmail} />}
       {route.page === 'category'  && <CategoryPage {...commonProps} categoryId={route.categoryId} />}
-      {route.page === 'boutiques' && <BoutiquesPage data={data} onNav={navigate} />}
-      {route.page === 'about'     && <AboutPage onNav={navigate} />}
       {route.page === 'wishlist'  && <WishlistPage {...commonProps} />}
+      {route.page === 'boutiques' && <BoutiquesPage {...commonProps} />}
+      {route.page === 'about'     && <AboutPage {...commonProps} />}
       {route.page === 'product'   && <ProductDetailPage {...commonProps} productId={route.entityId} />}
       {route.page === 'brand'     && <BrandPage {...commonProps} brandId={route.entityId} />}
       {route.page === 'merchant'  && <MerchantPage {...commonProps} merchantId={route.entityId} />}
       {route.page === 'look'      && <LookPage {...commonProps} lookSlug={route.entityId} />}
+      {route.page === 'look-all'  && <LookAllPage {...commonProps} lookSlug={route.entityId} />}
       {route.page === 'landing-page' && <LandingPage {...commonProps} landingPageId={route.entityId} />}
       {route.page === 'collection' && <CollectionPage {...commonProps} collectionSlug={route.entityId} lookSlug={route.categoryId} />}
       {route.page === 'blog'      && <BlogList onNav={navigate} />}
@@ -348,25 +350,26 @@ function LogoStyleInjector({ variant }) {
 
 // ---- Hash parser ----
 function parseHash() {
-  const h = window.location.hash || '#/';
-  const path = h.replace(/^#\/?/, '');
-  // Static routes
-  if (path === ''           || path === '/') return { page: 'home',      categoryId: null, entityId: null };
-  if (path === 'boutiques')                 return { page: 'boutiques', categoryId: null, entityId: null };
-  if (path === 'about')                     return { page: 'about',     categoryId: null, entityId: null };
-  if (path === 'wishlist')                  return { page: 'wishlist',  categoryId: null, entityId: null };
-  if (path === 'blog')                      return { page: 'blog',      categoryId: null, entityId: null };
-  // Dynamic routes
-  if (path.startsWith('c/'))            return { page: 'category',    categoryId: path.slice(2) || 'maxi-dresses', entityId: null };
-  if (path.startsWith('product/'))      return { page: 'product',     categoryId: null, entityId: path.slice(8) };
-  if (path.startsWith('brand/'))        return { page: 'brand',       categoryId: null, entityId: path.slice(6) };
-  if (path.startsWith('merchant/'))     return { page: 'merchant',    categoryId: null, entityId: path.slice(9) };
-  if (path.startsWith('look/'))         return { page: 'look',        categoryId: null, entityId: path.slice(5) };
-  if (path.startsWith('landing-page/')) return { page: 'landing-page',categoryId: null, entityId: path.slice(13) };
-  if (path.startsWith('blog/'))         return { page: 'blog-post',   categoryId: null, entityId: path.slice(5) };
-  if (path.startsWith('collection/')) {
-    const parts = path.split('/');
-    return { page: 'collection', categoryId: parts[1] || null, entityId: parts[2] || null };
+  const hash = window.location.hash || '#/';
+  if (hash === '' || hash === '#/') return { page: 'home' };
+  if (hash === '#/wishlist') return { page: 'wishlist' };
+  if (hash === '#/boutiques') return { page: 'boutiques' };
+  if (hash === '#/about') return { page: 'about' };
+  if (hash === '#/blog') return { page: 'blog' };
+  if (hash.startsWith('#/blog/')) return { page: 'blog-post', entityId: hash.split('/')[2] };
+  if (hash.startsWith('#/product/')) return { page: 'product', entityId: hash.split('/')[2] };
+  if (hash.startsWith('#/brand/')) return { page: 'brand', entityId: hash.split('/')[2] };
+  if (hash.startsWith('#/merchant/')) return { page: 'merchant', entityId: hash.split('/')[2] };
+  if (hash.startsWith('#/landing-page/')) return { page: 'landing-page', entityId: hash.split('/')[2] };
+  if (hash.startsWith('#/look/')) {
+    const parts = hash.split('/');
+    if (parts[3] === 'all') return { page: 'look-all', entityId: parts[2] };
+    return { page: 'look', entityId: parts[2] };
+  }
+  if (hash.startsWith('#/c/')) return { page: 'category', categoryId: hash.split('/')[2] };
+  if (hash.startsWith('#/collection/')) {
+    const parts = hash.split('/');
+    return { page: 'collection', categoryId: parts[2] || null, entityId: parts[3] || null };
   }
   return { page: 'home', categoryId: null, entityId: null };
 }

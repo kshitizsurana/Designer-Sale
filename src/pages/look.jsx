@@ -93,17 +93,10 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   // Filtered + sorted products (all in one grid, no category subdivisions)
   const filteredProducts = useLookMemo(() => {
     let prods = allLookProducts;
-    if (brandFilter !== 'all') prods = prods.filter(p => p.brandId === brandFilter);
-    switch (sort) {
-      case 'discount': return [...prods].sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
-      case 'new': return [...prods].sort((a, b) => (b.newIn ? 1 : 0) - (a.newIn ? 1 : 0));
-      case 'price-asc': return [...prods].sort((a, b) => (a.sale || 0) - (b.sale || 0));
-      case 'price-desc': return [...prods].sort((a, b) => (b.sale || 0) - (a.sale || 0));
-      default: return prods;
-    }
-  }, [allLookProducts, brandFilter, sort]);
+    return [...prods].sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
+  }, [allLookProducts]);
 
-  const visibleProducts = showAll ? filteredProducts : filteredProducts.slice(0, INITIAL_PRODUCTS);
+  const visibleProducts = filteredProducts.slice(0, 8);
 
   const avgSaving = allLookProducts.length > 0
     ? Math.round(allLookProducts.reduce((sum, p) => sum + (p.discountPct || 0), 0) / allLookProducts.length)
@@ -256,53 +249,11 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
             </div>
           </div>
 
-          {/* Filter bar */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 32, alignItems: 'center', paddingBottom: 20, borderBottom: '1px solid var(--line)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Sort</span>
-              <select
-                className="form-input"
-                style={{ fontSize: 13, padding: '6px 12px', border: '1px solid var(--line)', background: 'var(--bg-card)', color: 'var(--ink)', borderRadius: 4, appearance: 'auto', minWidth: 180 }}
-                value={sort}
-                onChange={e => setSort(e.target.value)}
-              >
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            {lookBrands.length > 1 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Brand</span>
-                <select
-                  className="form-input"
-                  style={{ fontSize: 13, padding: '6px 12px', border: '1px solid var(--line)', background: 'var(--bg-card)', color: 'var(--ink)', borderRadius: 4, appearance: 'auto', minWidth: 180 }}
-                  value={brandFilter}
-                  onChange={e => { setBrandFilter(e.target.value); setShowAll(false); }}
-                >
-                  <option value="all">All Brands ({allLookProducts.length})</option>
-                  {lookBrands.map(b => (
-                    <option key={b.id} value={b.id}>{b.name} ({allLookProducts.filter(p => p.brandId === b.id).length})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {(brandFilter !== 'all') && (
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => { setBrandFilter('all'); setShowAll(false); }}
-                style={{ fontSize: 12 }}
-              >
-                Clear filters
-              </button>
-            )}
-            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-muted)' }}>
-              {filteredProducts.length} results
-            </span>
-          </div>
 
           {filteredProducts.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--ink-muted)' }}>
               <div style={{ fontSize: 40, marginBottom: 16 }}>🛍️</div>
-              <p>No products found for this filter. <button className="btn btn-ghost btn-sm" onClick={() => { setBrandFilter('all'); }}>Clear filters</button></p>
+              <p>No products added for this style yet.</p>
             </div>
           ) : (
             <>
@@ -311,9 +262,9 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                   <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
                 ))}
               </div>
-              {!showAll && filteredProducts.length > INITIAL_PRODUCTS && (
+              {filteredProducts.length > 8 && (
                 <div style={{ textAlign: 'center', marginTop: 40 }}>
-                  <button className="btn btn-outline" onClick={() => setShowAll(true)}>
+                  <button className="btn btn-outline" onClick={() => onNav('look-all', null, null, look.slug)}>
                     Show all {filteredProducts.length} pieces <Icon.ArrowRight />
                   </button>
                 </div>
