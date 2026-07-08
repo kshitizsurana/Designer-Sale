@@ -157,6 +157,8 @@ const authenticateToken = (req, res, next) => {
 // One request for the public app shell. This avoids seven separate serverless
 // round trips during first render while keeping the existing CRUD endpoints.
 app.get('/api/bootstrap', async (req, res) => {
+    // Cache on Vercel edge for 60 seconds, allow stale up to 5 minutes
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
     try {
         const [
             { data: categories, error: categoriesError },

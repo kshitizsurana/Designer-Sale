@@ -37,26 +37,28 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <div className="eyebrow">Live edit · {totalItems} styles on sale now</div>
+            <div className="eyebrow">MAY EDIT &middot; {totalItems} STYLES ON SALE NOW</div>
             <h1>
-              {heroTitle}<br />
-              <em>{heroDiscount > 0 ? `up to ${heroDiscount}% off.` : 'curated from boutiques.'}</em>
+              Maxi Dresses<br/>
+              &amp; Kaftans<br/>
+              <em>up to 70% off.</em>
             </h1>
             <p style={{ color: 'var(--ink-soft)', fontSize: 17, maxWidth: 480, margin: 0 }}>
-              {featuredPage?.short_description || "Australia's designer boutique sales, curated from the live catalogue."}
+              The monthly edit from Australia&rsquo;s most-loved boutiques &mdash; curated, never crowded. New styles drop every weekday.
             </p>
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 8 }}>
               <button
                 className="btn btn-gold"
                 onClick={() => featuredPage ? onNav('landing-page', null, null, featuredPage.id) : onNav('category', topCategories[0]?.id || data.categories[0]?.id)}
               >
-                Shop the edit <Icon.ArrowRight />
+                SHOP THE MAY EDIT <Icon.ArrowRight />
               </button>
               <button
                 className="btn btn-ghost"
                 onClick={() => onNav('about')}
+                style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}
               >
-                How it works
+                HOW IT WORKS
               </button>
             </div>
             <div style={{
@@ -101,7 +103,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
               textTransform: 'uppercase',
               color: 'var(--ink)',
             }}>
-              Live · {new Date().toLocaleDateString('en-AU', { month: '2-digit', year: '2-digit' })}
+              ISSUE . 05 / 26
             </div>
           </div>
         </div>
