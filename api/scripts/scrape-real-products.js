@@ -364,12 +364,12 @@ async function ensureCategory(categoryId) {
   };
   const { data: existing } = await supabase.from('categories').select('id').eq('id', categoryId).single();
   if (existing) return;
+  // Only use base columns from original CREATE TABLE (no ALTER TABLE additions)
   const { error } = await supabase.from('categories').insert([{
     id: categoryId,
     label: CATEGORY_LABELS[categoryId] || categoryId,
-    status: 'active',
   }]);
-  if (error && !error.message.includes('duplicate')) {
+  if (error && !error.message.includes('duplicate') && !error.message.includes('already exists')) {
     console.warn(`  ⚠ Could not create category ${categoryId}: ${error.message}`);
   }
 }
@@ -380,6 +380,10 @@ async function upsertProduct(product) {
     ? JSON.stringify({ desc: product.description || '', url: product.url })
     : (product.description || '');
 
+  // Only use columns that exist in the ORIGINAL CREATE TABLE products (not ALTER TABLE additions)
+  // The live DB seems to not have the ALTER TABLE migrations applied yet.
+  // look_id and status are added via ALTER TABLE, so we skip them here.
+  // The frontend connects products to looks via merchants.look_id (already works).
   const row = {
     id: product.id,
     title: product.title,
@@ -393,13 +397,23 @@ async function upsertProduct(product) {
     sizes: product.sizes,
     image: product.image,
     description: finalDesc,
-    look_id: product.look_id,
-    status: 'active',
-    tags: product.tags,
     added: product.added,
   };
 
-  const { error } = await supabase.from('products').upsert([row], { onConflict: 'id' });
+  // Try with look_id first (post-migration), fall back without it
+  const rowWithLook = { ...row, look_id: product.look_id };
+  let { error } = await supabase.from('products').upsert([rowWithLook], { onConflict: 'id' });
+
+  if (error && error.message.includes('look_id')) {
+    // look_id column not in schema cache — insert without it
+    const { error: err2 } = await supabase.from('products').upsert([row], { onConflict: 'id' });
+    if (err2) {
+      console.warn(`  ⚠ upsert failed for ${product.id}: ${err2.message}`);
+      return false;
+    }
+    return true;
+  }
+
   if (error) {
     console.warn(`  ⚠ upsert failed for ${product.id}: ${error.message}`);
     return false;
