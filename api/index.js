@@ -166,6 +166,7 @@ app.get('/api/bootstrap', async (req, res) => {
             { data: brands, error: brandsError },
             { data: products, error: productsError },
             { data: looks, error: looksError },
+            { data: blogs, error: blogsError },
             collections,
             landingPages
         ] = await Promise.all([
@@ -178,6 +179,7 @@ app.get('/api/bootstrap', async (req, res) => {
                 merchant:merchants(name)
             `),
             supabase.from('looks').select('*'),
+            supabase.from('blogs').select('*').eq('status', 'published'),
             getCollectionsWithProducts().catch((error) => {
                 console.error('collections error:', error.message);
                 return [];
@@ -185,7 +187,7 @@ app.get('/api/bootstrap', async (req, res) => {
             getLandingPages()
         ]);
 
-        const firstError = categoriesError || merchantsError || brandsError || productsError || looksError;
+        const firstError = categoriesError || merchantsError || brandsError || productsError || looksError || blogsError;
         if (firstError) return res.status(500).json({ error: firstError.message });
 
         res.set('Cache-Control', 'no-store');
@@ -195,6 +197,7 @@ app.get('/api/bootstrap', async (req, res) => {
             brands: brands || [],
             products: (products || []).map(mapProductRow),
             looks: looks || [],
+            blogs: blogs || [],
             collections,
             landing_pages: landingPages
         });

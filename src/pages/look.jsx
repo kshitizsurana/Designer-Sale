@@ -64,8 +64,10 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   const allLookProducts = data.products.filter(p => p.look_id === look.id || (data.merchants.find(m => m.id === p.merchantId)?.look_id === look.id));
   const lookMerchants = data.merchants.filter(m => m.look_id === look.id);
 
-  // Landing pages for this look
-  const lookLandingPages = (data.landing_pages || []).filter(lp => lp.look_id === look.id && lp.status !== 'archived');
+  // Curated Sales for this look (Landing pages + Collections)
+  const lookLandingPages = (data.landing_pages || []).filter(lp => lp.look_id === look.id && lp.status !== 'archived').map(lp => ({ ...lp, type: 'landing-page', sort: lp.sort_order || 0 }));
+  const lookCollections = (data.collections || []).filter(c => c.look_id === look.id && c.status !== 'archived').map(c => ({ ...c, type: 'collection', image: c.hero_image, short_description: c.description, sort: c.display_order || 0 }));
+  const curatedSales = [...lookLandingPages, ...lookCollections].sort((a, b) => a.sort - b.sort);
 
   const keywords = Array.isArray(look.keywords) ? look.keywords.filter(Boolean) : [];
   const featureTitle = look.feature_title || look.name;
@@ -183,7 +185,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
           CURATED SALES — landing pages tied to this look
           (matches how home page shows Featured Sales)
       ════════════════════════════════ */}
-      {lookLandingPages.length > 0 && (
+      {curatedSales.length > 0 && (
         <>
           <hr className="divider-rule" />
           <section className="section container-wide">
@@ -192,9 +194,9 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3.5vw, 42px)' }}>{look.name} Featured Sales.</h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-              {lookLandingPages.map((lp, i) => (
+              {curatedSales.map((item, i) => (
                 <button
-                  key={lp.id}
+                  key={item.id}
                   className="fade-in"
                   style={{
                     position: 'relative',
@@ -210,12 +212,15 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                     cursor: 'pointer',
                     background: palette.hero,
                   }}
-                  onClick={() => onNav('landing-page', null, null, lp.id)}
+                  onClick={() => {
+                    if (item.type === 'collection') onNav('collection', null, null, item.slug || item.id);
+                    else onNav('landing-page', null, null, item.id);
+                  }}
                 >
-                  {lp.image && (
+                  {item.image && (
                     <img
-                      src={lp.image}
-                      alt={lp.title}
+                      src={item.image}
+                      alt={item.title}
                       loading="lazy"
                       style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 600ms ease' }}
                       onError={e => { e.currentTarget.style.display = 'none'; }}
@@ -223,8 +228,8 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                   )}
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
                   <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px', color: '#fff' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 2.5vw, 36px)', marginBottom: 10 }}>{lp.title}</h3>
-                    <p style={{ fontSize: 15, opacity: 0.85, marginBottom: 18, maxWidth: 560 }}>{lp.short_description}</p>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 2.5vw, 36px)', marginBottom: 10 }}>{item.title}</h3>
+                    <p style={{ fontSize: 15, opacity: 0.85, marginBottom: 18, maxWidth: 560 }}>{item.short_description}</p>
                     <span className="btn btn-ghost" style={{ border: '1px solid rgba(255,255,255,0.4)', color: '#fff', backdropFilter: 'blur(4px)' }}>
                       Shop Sale <Icon.ArrowRight style={{ marginLeft: 8 }} />
                     </span>
@@ -464,8 +469,6 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                 const otherPalette = paletteForLook(l);
                 const lCount = data.products.filter(p => p.look_id === l.id).length;
                 const lMerchants = data.merchants.filter(m => m.look_id === l.id).length;
-                // First tile spans 2 columns on the left for visual drama
-                const isFeature = idx === 0;
                 return (
                   <button
                     key={l.id}
@@ -478,8 +481,8 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                       cursor: 'pointer',
                       textAlign: 'left',
                       padding: 0,
-                      height: isFeature ? 460 : 300,
-                      gridColumn: isFeature ? 'span 2' : 'span 1',
+                      height: 340,
+                      gridColumn: 'span 1',
                       background: otherPalette.hero,
                       transition: 'transform 220ms ease, box-shadow 220ms ease',
                     }}
@@ -499,15 +502,15 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                     <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }} />
 
                     {/* Content */}
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isFeature ? '32px 36px' : '24px 28px' }}>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '24px 28px' }}>
                       <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: otherPalette.accent, marginBottom: 8 }}>
                         Shop by Style
                       </div>
-                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: isFeature ? 38 : 26, lineHeight: 1.05, color: '#fff', marginBottom: 10, letterSpacing: '-0.012em' }}>
+                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 32, lineHeight: 1.05, color: '#fff', marginBottom: 10, letterSpacing: '-0.012em' }}>
                         {l.name}
                       </h3>
-                      {isFeature && l.description && (
-                        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', lineHeight: 1.5, marginBottom: 18, maxWidth: 420 }}>
+                      {l.description && (
+                        <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.78)', lineHeight: 1.5, marginBottom: 18, maxWidth: 420 }}>
                           {l.description}
                         </p>
                       )}

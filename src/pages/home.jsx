@@ -256,6 +256,53 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
 
       <hr className="divider-rule" />
 
+      {/* ---- Blogs Section ---- */}
+      {data.blogs && data.blogs.length > 0 && (
+        <section className="section container-wide">
+          <div className="section-head">
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 10 }}>Editor's Desk</div>
+              <h2>Style Notes & Guides.</h2>
+            </div>
+            <a className="section-head-link" href="#/" onClick={(e)=>{e.preventDefault(); /* onNav('blogs') */}}>View all articles</a>
+          </div>
+          <div className="tile-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+            {data.blogs.map((blog, i) => (
+              <a
+                key={blog.id}
+                href={`#/blog/${blog.slug}`}
+                onClick={(e)=>{e.preventDefault(); /* onNav('blog', null, null, blog.slug) */}}
+                className="fade-in"
+                style={{
+                  display: 'block',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  animationDelay: `${i * 60}ms`
+                }}
+              >
+                <div style={{ position: 'relative', width: '100%', height: 280, marginBottom: 16, overflow: 'hidden', borderRadius: 8 }}>
+                  {blog.image && (
+                    <img
+                      src={blog.image}
+                      alt={blog.title}
+                      loading="lazy"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 600ms ease' }}
+                    />
+                  )}
+                </div>
+                <div className="eyebrow" style={{ marginBottom: 8 }}>{blog.author}</div>
+                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 8 }}>{blog.title}</h3>
+                <p style={{ fontSize: 15, color: 'var(--ink-soft)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  {blog.content}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <hr className="divider-rule" />
+
       {/* ---- Featured boutiques strip ---- */}
       <section className="container-wide" style={{ paddingBottom: 'var(--pad-xl)' }}>
         <div className="eyebrow" style={{ textAlign: 'center', margin: '0 0 24px' }}>
