@@ -52,12 +52,12 @@ function App() {
         const landing_pages = (Array.isArray(bootstrap.landing_pages) ? bootstrap.landing_pages : []).filter(lp => (lp.status || 'published') !== 'archived');
 
         const categoryExtras = {
-          'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'] },
-          'kaftans':      { swatch: ['#E8D9C4', '#7A6450'] },
-          'tops-blouses': { swatch: ['#D8C8B8', '#8E7558'] },
-          'coats-jackets':    { swatch: ['#6B5B4A', '#2A2520'] },
-          'bags-accessories': { swatch: ['#A8854A', '#5C4632'] },
-          'jewellery':        { swatch: ['#C9A84C', '#E8D4B8'] },
+          'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'], image: window.IMG?.catMaxi },
+          'kaftans':      { swatch: ['#E8D9C4', '#7A6450'], image: window.IMG?.catKaftan },
+          'tops-blouses': { swatch: ['#D8C8B8', '#8E7558'], image: window.IMG?.catTops },
+          'coats-jackets':    { swatch: ['#6B5B4A', '#2A2520'], image: window.IMG?.catCoats },
+          'bags-accessories': { swatch: ['#A8854A', '#5C4632'], image: window.IMG?.catBags },
+          'jewellery':        { swatch: ['#C9A84C', '#E8D4B8'], image: window.IMG?.catJewel },
         };
 
         const enrichedCategories = categories.map(c => {
@@ -65,7 +65,7 @@ function App() {
           const ext = categoryExtras[c.id] || { swatch: ['#ccc', '#aaa'] };
           return {
             ...c,
-            image: c.image || '',
+            image: c.image || ext.image || '',
             swatch: dbSwatch || ext.swatch,
             count: products.filter(p => p.category === c.id).length,
           };
