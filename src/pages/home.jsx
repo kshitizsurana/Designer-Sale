@@ -18,6 +18,18 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
   const avgDiscount = data.products && data.products.length > 0 
     ? Math.round(data.products.reduce((acc, p) => acc + (p.discountPct || 0), 0) / data.products.length) 
     : 0;
+  const featuredPage = (data.landing_pages || [])[0] || null;
+  const topCategories = (data.categories || [])
+    .slice()
+    .sort((a, b) => (b.count || 0) - (a.count || 0))
+    .slice(0, 2);
+  const heroTitle = featuredPage
+    ? featuredPage.title
+    : topCategories.length > 0
+      ? topCategories.map(c => c.label).join(' & ')
+      : 'Designer Sales';
+  const heroDiscount = data.products?.length ? Math.max(...data.products.map(p => p.discountPct || 0)) : 0;
+  const heroImage = featuredPage?.image || data.products.find(p => p.image)?.image || (window.IMG && window.IMG.heroBanner) || '';
 
   return (
     <main>
@@ -25,21 +37,20 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-copy">
-            <div className="eyebrow">May Edit · {totalItems} styles on sale now</div>
+            <div className="eyebrow">Live edit · {totalItems} styles on sale now</div>
             <h1>
-              Maxi Dresses<br />
-              & Kaftans<br />
-              <em>up to 70% off.</em>
+              {heroTitle}<br />
+              <em>{heroDiscount > 0 ? `up to ${heroDiscount}% off.` : 'curated from boutiques.'}</em>
             </h1>
             <p style={{ color: 'var(--ink-soft)', fontSize: 17, maxWidth: 480, margin: 0 }}>
-              The monthly edit from Australia's most-loved boutiques — curated, never crowded. New styles drop every weekday.
+              {featuredPage?.short_description || "Australia's designer boutique sales, curated from the live catalogue."}
             </p>
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 8 }}>
               <button
                 className="btn btn-gold"
-                onClick={() => onNav('category', 'maxi-dresses')}
+                onClick={() => featuredPage ? onNav('landing-page', null, null, featuredPage.id) : onNav('category', topCategories[0]?.id || data.categories[0]?.id)}
               >
-                Shop the May Edit <Icon.ArrowRight />
+                Shop the edit <Icon.ArrowRight />
               </button>
               <button
                 className="btn btn-ghost"
@@ -60,8 +71,8 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
           </div>
           <div className="hero-art">
             <img
-              src={(window.IMG && window.IMG.heroBanner) || ''}
-              alt="Editorial fashion — woman in silk maxi, golden hour"
+              src={heroImage}
+              alt={featuredPage?.title || 'Designer boutique sale edit'}
               loading="eager"
               style={{
                 position: 'absolute',
@@ -90,7 +101,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
               textTransform: 'uppercase',
               color: 'var(--ink)',
             }}>
-              Issue · 05 / 26
+              Live · {new Date().toLocaleDateString('en-AU', { month: '2-digit', year: '2-digit' })}
             </div>
           </div>
         </div>

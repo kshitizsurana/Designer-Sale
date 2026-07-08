@@ -13,14 +13,18 @@ function LandingPage({ landingPageId, data, wishlist, onToggleWishlist, onShop, 
 
   const products = useMemo(() => {
     if (!pageData || !data?.products) return [];
+    const rules = pageData.filter_rules || {};
     return data.products.filter(p => {
       if (pageData.products && pageData.products.includes(p.id)) return true;
+      if (rules.minDiscount && (p.discountPct || 0) < Number(rules.minDiscount)) return false;
+      if (Array.isArray(rules.brandIds) && rules.brandIds.length > 0 && !rules.brandIds.includes(p.brandId)) return false;
+      if (Array.isArray(rules.categoryIds) && rules.categoryIds.length > 0 && !rules.categoryIds.includes(p.category)) return false;
       if (pageData.look_id) {
         if (p.look_id === pageData.look_id) return true;
         const pMerchant = data.merchants?.find(m => m.id === p.merchantId);
         if (pMerchant && pMerchant.look_id === pageData.look_id) return true;
       }
-      return false;
+      return Boolean(rules.minDiscount || rules.brandIds?.length || rules.categoryIds?.length);
     });
   }, [pageData, data]);
 

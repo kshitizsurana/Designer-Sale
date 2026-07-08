@@ -2,8 +2,9 @@
 // Wraps fetch calls to the real Node.js backend.
 
 (function () {
-    const isLocalStatic = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && window.location.port !== '3000';
-    const API_BASE = isLocalStatic ? 'https://designer-sale.vercel.app/api' : '/api';
+    const isLocalHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isLocalStatic = isLocalHost && window.location.port && window.location.port !== '3000';
+    const API_BASE = isLocalStatic ? `${window.location.protocol}//${window.location.hostname}:3000/api` : '/api';
 
     function getAuthToken() {
         try {
@@ -57,6 +58,11 @@
             }
         },
 
+        // ---- Public app bootstrap ----
+        bootstrap: {
+            get: () => fetchAPI('/bootstrap')
+        },
+
         // ---- Looks ----
         looks: {
             getAll: () => fetchAPI('/looks'),
@@ -76,7 +82,10 @@
 
         // ---- Categories ----
         categories: {
-            getAll: () => fetchAPI('/categories')
+            getAll: () => fetchAPI('/categories'),
+            create: (data) => fetchAPI('/categories', { method: 'POST', body: data }),
+            update: (id, data) => fetchAPI(`/categories/${id}`, { method: 'PUT', body: data }),
+            delete: (id) => fetchAPI(`/categories/${id}`, { method: 'DELETE' }),
         },
 
         landingPages: {

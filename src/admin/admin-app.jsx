@@ -105,7 +105,7 @@ function AdminLogin({ onLogin }) {
 function AdminApp() {
   const [authed, setAuthed] = useAdminState(API.auth.isLoggedIn());
   const [page, setPage] = useAdminState(() => {
-    const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
+    const validPages = ['dashboard', 'looks', 'categories', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
     const path = window.location.pathname;
     // Support /admin, /admin/, /admin/collections, etc.
     if (path === '/admin' || path === '/admin/') return 'dashboard';
@@ -138,7 +138,7 @@ function AdminApp() {
   // Sync URL to state (browser back/forward)
   useAdminEffect(() => {
     const onPopState = () => {
-      const validPages = ['dashboard', 'looks', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
+      const validPages = ['dashboard', 'looks', 'categories', 'collections', 'merchants', 'brands', 'products', 'landing-pages', 'upload', 'blogs'];
       const path = window.location.pathname;
       let newPage = 'dashboard';
       if (path === '/admin' || path === '/admin/') {
@@ -182,6 +182,7 @@ function AdminApp() {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', Icon: AIcon.Dashboard },
     { id: 'looks', label: 'Looks', Icon: AIcon.Looks },
+    { id: 'categories', label: 'Categories', Icon: AIcon.Collections },
     { id: 'collections', label: 'Collections', Icon: AIcon.Collections },
     { id: 'merchants', label: 'Merchants', Icon: AIcon.Merchants, count: stats.totalMerchants },
     { id: 'brands',   label: 'Brands',    Icon: AIcon.Brands,    count: stats.totalBrands },
@@ -191,7 +192,7 @@ function AdminApp() {
     { id: 'upload', label: 'Bulk Upload', Icon: AIcon.Upload },
   ];
 
-  const pageTitles = { dashboard: 'Dashboard', looks: 'Looks', collections: 'Collections', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages', blogs: 'Blogs' };
+  const pageTitles = { dashboard: 'Dashboard', looks: 'Looks', categories: 'Categories', collections: 'Collections', merchants: 'Merchants', brands: 'Brands', products: 'Products', upload: 'Bulk Upload', 'landing-pages': 'Landing Pages', blogs: 'Blogs' };
 
   return (
     <div className="admin-shell">
@@ -233,6 +234,7 @@ function AdminApp() {
         <div className="admin-content">
             {page === 'dashboard' && <AdminDashboard stats={stats} toast={showToast} onNav={navigateAdmin} />}
             {page === 'looks' && <AdminLooks toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
+            {page === 'categories' && <AdminCategories toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
             {page === 'collections' && <AdminCollections toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
             {page === 'merchants' && <AdminMerchants toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}
             {page === 'brands' && <AdminBrands toast={showToast} initialAction={pageAction} onActionHandled={() => setPageAction(null)} />}

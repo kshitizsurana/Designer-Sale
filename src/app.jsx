@@ -25,15 +25,31 @@ function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [categories, merchants, brands, products, looks, collections, landing_pages] = await Promise.all([
-          API.categories.getAll(),
-          API.merchants.getAll(),
-          API.brands.getAll(),
-          API.products.getAll(),
-          API.looks.getAll(),
-          API.collections.getAll().catch(() => []), // Fallback in case of error/unmigrated DB
-          API.landingPages.getAll().catch(() => [])
-        ]);
+        let bootstrap;
+        try {
+          bootstrap = await API.bootstrap.get();
+        } catch (bootstrapError) {
+          const [categories, merchants, brands, products, looks, collections, landing_pages] = await Promise.all([
+            API.categories.getAll(),
+            API.merchants.getAll(),
+            API.brands.getAll(),
+            API.products.getAll(),
+            API.looks.getAll(),
+            API.collections.getAll().catch(() => []),
+            API.landingPages.getAll().catch(() => [])
+          ]);
+          bootstrap = { categories, merchants, brands, products, looks, collections, landing_pages };
+        }
+
+        const categories = (Array.isArray(bootstrap.categories) ? bootstrap.categories : []).filter(c => (c.status || 'active') === 'active');
+        const merchants = (Array.isArray(bootstrap.merchants) ? bootstrap.merchants : []).filter(m => (m.status || 'active') === 'active');
+        const brands = Array.isArray(bootstrap.brands) ? bootstrap.brands : [];
+        const products = (Array.isArray(bootstrap.products) ? bootstrap.products : []).filter(p => (p.status || 'active') === 'active');
+        const looks = (Array.isArray(bootstrap.looks) ? bootstrap.looks : [])
+          .filter(l => (l.status || 'active') === 'active')
+          .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.id - b.id);
+        const collections = (Array.isArray(bootstrap.collections) ? bootstrap.collections : []).filter(c => (c.status || 'active') !== 'archived' && c.status !== 'hidden');
+        const landing_pages = (Array.isArray(bootstrap.landing_pages) ? bootstrap.landing_pages : []).filter(lp => (lp.status || 'published') !== 'archived');
 
         const categoryExtras = {
           'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'] },
@@ -45,7 +61,7 @@ function App() {
         };
 
         const enrichedCategories = categories.map(c => {
-          const dbSwatch = Array.isArray(c.swatch) ? c.swatch : (typeof c.swatch === 'string' ? JSON.parse(c.swatch) : null);
+          const dbSwatch = Array.isArray(c.swatch) ? c.swatch : safeJsonArray(c.swatch);
           const ext = categoryExtras[c.id] || { swatch: ['#ccc', '#aaa'] };
           return {
             ...c,
@@ -68,9 +84,9 @@ function App() {
           const hue = 18 + ((i * 37) % 40);
           const lightness = 78 + ((i * 11) % 14);
           
-          let url = merchant.website ? (merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`) : '';
+          let url = p.url || (merchant.website ? (merchant.website.startsWith('http') ? merchant.website : `https://${merchant.website}`) : '');
           const handle = p.id.includes('__') ? p.id.split('__')[1] : null;
-          if (url && handle) {
+          if (!p.url && url && handle) {
             url = `${url.replace(/\/$/, '')}/products/${handle}`;
           }
 
@@ -81,7 +97,7 @@ function App() {
             merchantData: merchant,
             look_id: p.look_id || merchant.look_id, // Inherit look from merchant
             placeholder: p.placeholder || { hue, lightness },
-            sizes: typeof p.sizes === 'string' ? JSON.parse(p.sizes) : (p.sizes || []),
+            sizes: Array.isArray(p.sizes) ? p.sizes : safeJsonArray(p.sizes),
           };
         });
 
@@ -103,7 +119,7 @@ function App() {
           boutiques: merchants,
         });
       } catch (e) {
-        setError(e.message);
+        setError(e.message || 'The site data could not be loaded.');
       } finally {
         setLoading(false);
       }
@@ -310,6 +326,16 @@ function App() {
       <LogoStyleInjector variant={tweaks.logoVariant} />
     </>
   );
+}
+
+function safeJsonArray(value) {
+  if (!value || typeof value !== 'string') return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    return [];
+  }
 }
 
 function LogoStyleInjector({ variant }) {

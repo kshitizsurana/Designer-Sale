@@ -29,7 +29,7 @@ app.use(express.json());
 
 app.get('/api/version', (req, res) => {
     res.json({
-        version: '1.0.2-deployment-ready',
+        version: '1.0.3-bootstrap-performance',
         supabaseConfigured: Boolean(supabase)
     });
 });
@@ -45,6 +45,84 @@ app.use((req, res, next) => {
 // No express.static or static HTML routes needed here.
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+function parseProductDescription(rawDescription) {
+    let description = rawDescription || '';
+    let url = null;
+    if (typeof description === 'string' && description.startsWith('{')) {
+        try {
+            const parsed = JSON.parse(description);
+            description = parsed.desc || '';
+            url = parsed.url || null;
+        } catch (e) {}
+    }
+    return { description, url };
+}
+
+function mapProductRow(row) {
+    const parsed = parseProductDescription(row.description);
+    return {
+        ...row,
+        brandId: row.brandid,
+        merchantId: row.merchantid,
+        discountPct: row.discountpct,
+        newIn: row.newin,
+        status: row.status || 'active',
+        tags: row.tags || [],
+        brand: row.brand ? row.brand.name : null,
+        merchant: row.merchant ? row.merchant.name : null,
+        description: parsed.description,
+        url: parsed.url
+    };
+}
+
+function mapMerchantRow(row) {
+    return {
+        ...row,
+        inStore: row.instore,
+        bestContactMethod: row.best_contact_method,
+        status: row.status || 'active'
+    };
+}
+
+function normalizeSlug(value, fallback = '') {
+    return String(value || fallback || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+function activeStatus(value, fallback = 'active') {
+    return value || fallback;
+}
+
+async function getCollectionsWithProducts() {
+    const { data: collections, error: cErr } = await supabase
+        .from('collections')
+        .select('*')
+        .order('display_order', { ascending: true });
+    if (cErr) throw cErr;
+
+    const { data: cpData, error: cpErr } = await supabase.from('collection_products').select('*');
+    if (cpErr) throw cpErr;
+
+    return (collections || []).map(c => ({
+        ...c,
+        product_ids: (cpData || [])
+            .filter(cp => cp.collection_id === c.id)
+            .sort((a, b) => a.display_order - b.display_order)
+            .map(cp => cp.product_id)
+    }));
+}
+
+async function getLandingPages() {
+    const { data, error } = await supabase.from('landing_pages').select('*');
+    if (error) {
+        console.error('landing_pages error:', error.message);
+        return [];
+    }
+    return data || [];
+}
 
 // --- AUTHENTICATION ---
 
@@ -74,6 +152,54 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+// --- PUBLIC BOOTSTRAP ---
+// One request for the public app shell. This avoids seven separate serverless
+// round trips during first render while keeping the existing CRUD endpoints.
+app.get('/api/bootstrap', async (req, res) => {
+    try {
+        const [
+            { data: categories, error: categoriesError },
+            { data: merchants, error: merchantsError },
+            { data: brands, error: brandsError },
+            { data: products, error: productsError },
+            { data: looks, error: looksError },
+            collections,
+            landingPages
+        ] = await Promise.all([
+            supabase.from('categories').select('*'),
+            supabase.from('merchants').select('*'),
+            supabase.from('brands').select('*'),
+            supabase.from('products').select(`
+                *,
+                brand:brands(name),
+                merchant:merchants(name)
+            `),
+            supabase.from('looks').select('*'),
+            getCollectionsWithProducts().catch((error) => {
+                console.error('collections error:', error.message);
+                return [];
+            }),
+            getLandingPages()
+        ]);
+
+        const firstError = categoriesError || merchantsError || brandsError || productsError || looksError;
+        if (firstError) return res.status(500).json({ error: firstError.message });
+
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            categories: categories || [],
+            merchants: (merchants || []).map(mapMerchantRow),
+            brands: brands || [],
+            products: (products || []).map(mapProductRow),
+            looks: looks || [],
+            collections,
+            landing_pages: landingPages
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // --- IMAGE UPLOAD (Cloudinary or base64 fallback) ---
 // POST /api/upload-image  (multipart: field 'file') or JSON body { url: '...' }
@@ -121,13 +247,15 @@ app.get('/api/looks', async (req, res) => {
 function pickLookRow(body) {
     const {
         name, slug, description, hero_image, status,
-        tagline, keywords, feature_title, feature_body, feature_cta,
+        tagline, keywords, feature_title, feature_body, feature_cta, sort_order,
     } = body;
-    return {
-        name, slug, description, hero_image, status: status || 'active',
+    const row = {
+        name, slug: normalizeSlug(slug, name), description, hero_image, status: status || 'active',
         tagline, keywords, feature_title, feature_body, feature_cta,
         updated_at: new Date().toISOString(),
     };
+    if (sort_order !== undefined && sort_order !== '') row.sort_order = Number(sort_order);
+    return row;
 }
 
 app.post('/api/looks', authenticateToken, async (req, res) => {
@@ -151,6 +279,15 @@ app.put('/api/looks/:id', authenticateToken, async (req, res) => {
 });
 
 app.delete('/api/looks/:id', authenticateToken, async (req, res) => {
+    const [{ count: merchantCount }, { count: productCount }] = await Promise.all([
+        supabase.from('merchants').select('*', { count: 'exact', head: true }).eq('look_id', req.params.id),
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('look_id', req.params.id)
+    ]);
+    if ((merchantCount || 0) > 0 || (productCount || 0) > 0) {
+        return res.status(409).json({
+            error: 'This look still has boutiques or products attached. Archive it or reassign those records before deleting.'
+        });
+    }
     const { error } = await supabase.from('looks').delete().eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ success: true, deletedId: req.params.id });
@@ -158,17 +295,12 @@ app.delete('/api/looks/:id', authenticateToken, async (req, res) => {
 
 // --- COLLECTIONS (Public & Admin) ---
 app.get('/api/collections', async (req, res) => {
-    const { data: collections, error: cErr } = await supabase.from('collections').select('*').order('display_order', { ascending: true });
-    if (cErr) return res.status(500).json({ error: cErr.message });
-    
-    const { data: cpData, error: cpErr } = await supabase.from('collection_products').select('*');
-    if (cpErr) return res.status(500).json({ error: cpErr.message });
-    
-    const result = collections.map(c => ({
-        ...c,
-        product_ids: cpData.filter(cp => cp.collection_id === c.id).sort((a, b) => a.display_order - b.display_order).map(cp => cp.product_id)
-    }));
-    res.json(result);
+    try {
+        const result = await getCollectionsWithProducts();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.post('/api/collections', authenticateToken, async (req, res) => {
@@ -224,33 +356,60 @@ app.get('/api/categories', async (req, res) => {
     res.json(data);
 });
 
+function pickCategoryRow(body) {
+    const { id, label, image, swatch, status, sort_order } = body;
+    const row = {
+        id: normalizeSlug(id, label),
+        label,
+    };
+    if (image !== undefined) row.image = image;
+    if (swatch !== undefined) row.swatch = swatch;
+    if (status !== undefined) row.status = status;
+    if (sort_order !== undefined && sort_order !== '') row.sort_order = Number(sort_order);
+    return row;
+}
+
+app.post('/api/categories', authenticateToken, async (req, res) => {
+    const row = pickCategoryRow(req.body);
+    if (!row.id || !row.label) return res.status(400).json({ error: 'Category id and label are required' });
+    const { error } = await supabase.from('categories').insert([row]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(row);
+});
+
 app.put('/api/categories/:id', authenticateToken, async (req, res) => {
-    const { label, image, swatch } = req.body;
+    const { label, image, swatch, status, sort_order } = req.body;
     const updates = {};
     if (label !== undefined) updates.label = label;
     if (image !== undefined) updates.image = image;
     if (swatch !== undefined) updates.swatch = swatch;
+    if (status !== undefined) updates.status = status;
+    if (sort_order !== undefined && sort_order !== '') updates.sort_order = Number(sort_order);
     const { error } = await supabase.from('categories').update(updates).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: req.params.id, ...updates });
+});
+
+app.delete('/api/categories/:id', authenticateToken, async (req, res) => {
+    const { count } = await supabase.from('products').select('*', { count: 'exact', head: true }).eq('category', req.params.id);
+    if ((count || 0) > 0) {
+        return res.status(409).json({ error: 'This category still has products attached. Reassign those products before deleting.' });
+    }
+    const { error } = await supabase.from('categories').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, deletedId: req.params.id });
 });
 
 // --- MERCHANTS (Public Read, Protected Write) ---
 app.get('/api/merchants', async (req, res) => {
     const { data, error } = await supabase.from('merchants').select('*');
     if (error) return res.status(500).json({ error: error.message });
-    
-    // Convert instore to inStore, etc.
-    const merchants = data.map(r => ({
-        ...r,
-        inStore: r.instore,
-        bestContactMethod: r.best_contact_method
-    }));
-    res.json(merchants);
+
+    res.json((data || []).map(mapMerchantRow));
 });
 
 app.post('/api/merchants', authenticateToken, async (req, res) => {
-    const { id, name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id } = req.body;
+    const { id, name, state, city, suburb, street_address, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id, logo_image, status } = req.body;
     const newId = id || 'm_' + Date.now().toString(36);
     
     // Only include fields that are defined to avoid schema errors for columns not yet migrated
@@ -259,6 +418,10 @@ app.post('/api/merchants', authenticateToken, async (req, res) => {
     if (instagram !== undefined) row.instagram = instagram;
     if (bestContactMethod !== undefined) row.best_contact_method = bestContactMethod;
     if (look_id !== undefined) row.look_id = look_id;
+    if (suburb !== undefined) row.suburb = suburb;
+    if (street_address !== undefined) row.street_address = street_address;
+    if (logo_image !== undefined) row.logo_image = logo_image;
+    if (status !== undefined) row.status = activeStatus(status);
 
     const { error } = await supabase.from('merchants').insert([row]);
     if (error) return res.status(500).json({ error: error.message });
@@ -266,13 +429,17 @@ app.post('/api/merchants', authenticateToken, async (req, res) => {
 });
 
 app.put('/api/merchants/:id', authenticateToken, async (req, res) => {
-    const { name, state, city, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id } = req.body;
+    const { name, state, city, suburb, street_address, online, inStore, focus, email, phone, website, description, facebook, instagram, bestContactMethod, look_id, logo_image, status } = req.body;
     
     const updates = { name, state, city, online: !!online, instore: !!inStore, focus, email, phone, website, description };
     if (facebook !== undefined) updates.facebook = facebook;
     if (instagram !== undefined) updates.instagram = instagram;
     if (bestContactMethod !== undefined) updates.best_contact_method = bestContactMethod;
     if (look_id !== undefined) updates.look_id = look_id;
+    if (suburb !== undefined) updates.suburb = suburb;
+    if (street_address !== undefined) updates.street_address = street_address;
+    if (logo_image !== undefined) updates.logo_image = logo_image;
+    if (status !== undefined) updates.status = activeStatus(status);
 
     const { error } = await supabase.from('merchants').update(updates).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
@@ -346,21 +513,21 @@ app.get('/api/brands', async (req, res) => {
 });
 
 app.post('/api/brands', authenticateToken, async (req, res) => {
-    const { id, name, description, website, founded, country } = req.body;
+    const { id, name, description, website, founded, country, logo } = req.body;
     const newId = id || 'b_' + Date.now().toString(36);
-    
-    const { error } = await supabase.from('brands').insert([{
-        id: newId, name, description, website, founded, country
-    }]);
+
+    const row = { id: newId, name, description, website, founded, country };
+    if (logo !== undefined) row.logo = logo;
+    const { error } = await supabase.from('brands').insert([row]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/brands/:id', authenticateToken, async (req, res) => {
-    const { name, description, website, founded, country } = req.body;
-    const { error } = await supabase.from('brands').update({
-        name, description, website, founded, country
-    }).eq('id', req.params.id);
+    const { name, description, website, founded, country, logo } = req.body;
+    const updates = { name, description, website, founded, country };
+    if (logo !== undefined) updates.logo = logo;
+    const { error } = await supabase.from('brands').update(updates).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: req.params.id, ...req.body });
 });
@@ -384,59 +551,47 @@ app.get('/api/products', async (req, res) => {
         
     if (error) return res.status(500).json({ error: error.message });
     
-    const products = data.map(r => {
-        let desc = r.description || '';
-        let url = null;
-        if (desc.startsWith('{')) {
-            try {
-                const parsed = JSON.parse(desc);
-                desc = parsed.desc || '';
-                url = parsed.url || null;
-            } catch (e) {}
-        }
-        return {
-            ...r,
-            brandId: r.brandid,
-            merchantId: r.merchantid,
-            discountPct: r.discountpct,
-            newIn: r.newin,
-            brand: r.brand ? r.brand.name : null,
-            merchant: r.merchant ? r.merchant.name : null,
-            description: desc,
-            url: url
-        };
-    });
-    res.json(products);
+    res.json((data || []).map(mapProductRow));
 });
 
 app.post('/api/products', authenticateToken, async (req, res) => {
-    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, url, look_id } = req.body;
+    const { id, category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, url, look_id, inventory, status, tags } = req.body;
     const newId = id || 'p_' + Date.now().toString(36);
     const added = Date.now();
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const finalDesc = url ? JSON.stringify({ desc: description || '', url }) : (description || '');
-
-    const { error } = await supabase.from('products').insert([{
+    const row = {
         id: newId, category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, added, description: finalDesc
-    }]);
+    };
+    if (look_id !== undefined && look_id !== '') row.look_id = Number(look_id);
+    if (inventory !== undefined && inventory !== '') row.inventory = Number(inventory) || 0;
+    if (status !== undefined) row.status = activeStatus(status);
+    if (tags !== undefined) row.tags = Array.isArray(tags) ? tags : String(tags).split(',').map(t => t.trim()).filter(Boolean);
+
+    const { error } = await supabase.from('products').insert([row]);
     
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ id: newId, ...req.body, discountPct: pct, added });
+    res.json({ id: newId, ...req.body, look_id: row.look_id, discountPct: pct, added });
 });
 
 app.put('/api/products/:id', authenticateToken, async (req, res) => {
-    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, url, look_id } = req.body;
+    const { category, title, brandId, merchantId, rrp, sale, discountPct, newIn, sizes, image, description, url, look_id, inventory, status, tags } = req.body;
     const pct = discountPct || Math.round(((rrp - sale) / rrp) * 100);
 
     const finalDesc = url ? JSON.stringify({ desc: description || '', url }) : (description || '');
-
-    const { error } = await supabase.from('products').update({
+    const updates = {
         category, title, brandid: brandId, merchantid: merchantId, rrp, sale, discountpct: pct, newin: !!newIn, sizes: sizes || [], image, description: finalDesc
-    }).eq('id', req.params.id);
+    };
+    if (look_id !== undefined) updates.look_id = look_id === '' ? null : Number(look_id);
+    if (inventory !== undefined && inventory !== '') updates.inventory = Number(inventory) || 0;
+    if (status !== undefined) updates.status = activeStatus(status);
+    if (tags !== undefined) updates.tags = Array.isArray(tags) ? tags : String(tags).split(',').map(t => t.trim()).filter(Boolean);
+
+    const { error } = await supabase.from('products').update(updates).eq('id', req.params.id);
     
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ id: req.params.id, ...req.body, discountPct: pct });
+    res.json({ id: req.params.id, ...req.body, look_id: updates.look_id, discountPct: pct });
 });
 
 app.delete('/api/products/:id', authenticateToken, async (req, res) => {
@@ -449,10 +604,6 @@ app.delete('/api/products/:id', authenticateToken, async (req, res) => {
 app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-    const results = [];
-    const errors = [];
-    let rowCount = 0;
-
     const { data: brandRows, error: brandErr } = await supabase.from('brands').select('id');
     if (brandErr) return res.status(500).json({ error: brandErr.message });
     const validBrands = new Set(brandRows.map(b => b.id));
@@ -461,40 +612,81 @@ app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (
     if (merchErr) return res.status(500).json({ error: merchErr.message });
     const validMerchants = new Set(merchRows.map(m => m.id));
 
+    const results = [];
+    const errors = [];
+
+    function normalizeProductImportRow(data, rowCount) {
+        const { title, brandId, merchantId, category, rrp, sale, sizes, image, description, url, look_id, newIn, inventory } = data;
+
+        if (!title || !brandId || !merchantId || !category || !rrp || !sale) {
+            errors.push({ row: rowCount, msg: 'Missing required fields' });
+            return;
+        }
+        if (!validBrands.has(brandId)) {
+            errors.push({ row: rowCount, msg: `Unknown brandId: ${brandId}` });
+            return;
+        }
+        if (!validMerchants.has(merchantId)) {
+            errors.push({ row: rowCount, msg: `Unknown merchantId: ${merchantId}` });
+            return;
+        }
+
+        const numRRP = Number(rrp);
+        const numSale = Number(sale);
+        if (!Number.isFinite(numRRP) || !Number.isFinite(numSale) || numRRP <= 0 || numSale <= 0) {
+            errors.push({ row: rowCount, msg: 'RRP and Sale must be positive numbers' });
+            return;
+        }
+
+        results.push({
+            title,
+            brandid: brandId,
+            merchantid: merchantId,
+            category,
+            rrp: numRRP,
+            sale: numSale,
+            sizes: Array.isArray(sizes) ? sizes : (sizes ? String(sizes).split(',').map(s => s.trim()).filter(Boolean) : []),
+            image: image || null,
+            description: url ? JSON.stringify({ desc: description || '', url }) : (description || null),
+            look_id: look_id ? Number(look_id) : null,
+            newin: String(newIn).toLowerCase() === 'true' || String(newIn) === '1',
+            inventory: inventory === undefined || inventory === '' ? 0 : Number(inventory) || 0
+        });
+    }
+
+    const isJson = req.file.mimetype === 'application/json' || req.file.originalname.toLowerCase().endsWith('.json');
+
+    if (isJson) {
+        try {
+            const parsed = JSON.parse(req.file.buffer.toString('utf8'));
+            const rows = Array.isArray(parsed) ? parsed : parsed.products;
+            if (!Array.isArray(rows)) return res.status(400).json({ error: 'JSON must be an array or an object with a products array.' });
+            rows.forEach((row, idx) => normalizeProductImportRow(row, idx + 1));
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid JSON file: ' + error.message });
+        }
+
+        if (results.length === 0) return res.json({ success: true, imported: 0, errors });
+
+        const now = Date.now();
+        const insertData = results.map((r, i) => ({
+            id: 'p_bulk_' + Date.now().toString(36) + '_' + i,
+            ...r,
+            discountpct: Math.round(((r.rrp - r.sale) / r.rrp) * 100),
+            added: now
+        }));
+        const { error } = await supabase.from('products').insert(insertData);
+        if (error) return res.status(500).json({ error: 'Transaction failed', details: error.message });
+        return res.json({ success: true, imported: results.length, errors });
+    }
+
+    let rowCount = 0;
     const { Readable } = require('stream');
     Readable.from(req.file.buffer)
         .pipe(csvParser())
         .on('data', (data) => {
             rowCount++;
-            const { title, brandId, merchantId, category, rrp, sale, sizes, image, description } = data;
-            
-            if (!title || !brandId || !merchantId || !category || !rrp || !sale) {
-                errors.push({ row: rowCount, msg: 'Missing required fields' });
-                return;
-            }
-            if (!validBrands.has(brandId)) {
-                errors.push({ row: rowCount, msg: `Unknown brandId: ${brandId}` });
-                return;
-            }
-            if (!validMerchants.has(merchantId)) {
-                errors.push({ row: rowCount, msg: `Unknown merchantId: ${merchantId}` });
-                return;
-            }
-
-            const numRRP = parseInt(rrp, 10);
-            const numSale = parseInt(sale, 10);
-            if (isNaN(numRRP) || isNaN(numSale)) {
-                errors.push({ row: rowCount, msg: 'RRP and Sale must be numbers' });
-                return;
-            }
-
-            results.push({
-                title, brandid: brandId, merchantid: merchantId, category, 
-                rrp: numRRP, sale: numSale, 
-                sizes: sizes ? sizes.split(',').map(s => s.trim()) : [], 
-                image: image || null, 
-                description: description || null
-            });
+            normalizeProductImportRow(data, rowCount);
         })
         .on('end', async () => {
             if (results.length === 0) {
@@ -507,17 +699,9 @@ app.post('/api/products/bulk', authenticateToken, upload.single('file'), async (
                 const pct = Math.round(((r.rrp - r.sale) / r.rrp) * 100);
                 return {
                     id: newId,
-                    category: r.category,
-                    title: r.title,
-                    brandid: r.brandid,
-                    merchantid: r.merchantid,
-                    rrp: r.rrp,
-                    sale: r.sale,
+                    ...r,
                     discountpct: pct,
-                    sizes: r.sizes,
-                    image: r.image,
-                    added: now,
-                    description: r.description
+                    added: now
                 };
             });
 
@@ -591,30 +775,30 @@ app.get('/api/stats', async (req, res) => {
 
 // --- LANDING PAGES ---
 app.get('/api/landing-pages', async (req, res) => {
-    const { data, error } = await supabase.from('landing_pages').select('*');
-    if (error) {
-        console.error('landing_pages error:', error.message);
-        // Return empty array so the UI doesn't crash (table may not exist yet)
-        return res.json([]);
-    }
-    res.json(data || []);
+    res.json(await getLandingPages());
 });
 
 app.post('/api/landing-pages', authenticateToken, async (req, res) => {
-    const { id, title, short_description, image, products, look_id, status } = req.body;
+    const { id, title, short_description, image, products, look_id, status, filter_rules, sort_order } = req.body;
     const newId = id || 'lp_' + Date.now().toString(36);
-    const { error } = await supabase.from('landing_pages').insert([{
+    const row = {
         id: newId, title, short_description, image, products: products || [], look_id, status: status || 'published'
-    }]);
+    };
+    if (filter_rules !== undefined) row.filter_rules = filter_rules || {};
+    if (sort_order !== undefined && sort_order !== '') row.sort_order = Number(sort_order);
+    const { error } = await supabase.from('landing_pages').insert([row]);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: newId, ...req.body });
 });
 
 app.put('/api/landing-pages/:id', authenticateToken, async (req, res) => {
-    const { title, short_description, image, products, look_id, status } = req.body;
-    const { error } = await supabase.from('landing_pages').update({
+    const { title, short_description, image, products, look_id, status, filter_rules, sort_order } = req.body;
+    const updates = {
         title, short_description, image, products: products || [], look_id, status: status || 'published'
-    }).eq('id', req.params.id);
+    };
+    if (filter_rules !== undefined) updates.filter_rules = filter_rules || {};
+    if (sort_order !== undefined && sort_order !== '') updates.sort_order = Number(sort_order);
+    const { error } = await supabase.from('landing_pages').update(updates).eq('id', req.params.id);
     if (error) return res.status(500).json({ error: error.message });
     res.json({ id: req.params.id, ...req.body });
 });

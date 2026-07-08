@@ -5,7 +5,7 @@ const { useState: useBrState, useEffect: useBrEffect, useMemo: useBrMemo } = Rea
 
 function BrandFormModal({ brand, onSave, onClose }) {
   const [form, setForm] = useBrState(brand || {
-    name: '', description: '', website: '', founded: '', country: 'AU',
+    name: '', description: '', website: '', logo: '', founded: '', country: 'AU',
   });
   const [errors, setErrors] = useBrState({});
 
@@ -64,6 +64,10 @@ function BrandFormModal({ brand, onSave, onClose }) {
             <div className="form-group">
               <label className="form-label">Website URL</label>
               <input className="form-input" type="url" value={form.website || ''} onChange={e => set('website', e.target.value)} placeholder="https://brand.com.au" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Logo URL</label>
+              <input className="form-input" type="url" value={form.logo || ''} onChange={e => set('logo', e.target.value)} placeholder="https://..." />
             </div>
           </div>
           <div className="admin-modal-footer">
@@ -212,9 +216,13 @@ function AdminBrands({ toast, initialAction, onActionHandled }) {
               <tr key={b.id}>
                 <td>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 36, height: 36, background: 'var(--bg-card)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--gold)', fontStyle: 'italic', flexShrink: 0 }}>
-                      {b.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
-                    </div>
+                    {b.logo ? (
+                      <img src={b.logo} alt="" style={{ width: 36, height: 36, objectFit: 'contain', background: 'var(--bg-card)', border: '1px solid var(--line)', flexShrink: 0 }} />
+                    ) : (
+                      <div style={{ width: 36, height: 36, background: 'var(--bg-card)', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--gold)', fontStyle: 'italic', flexShrink: 0 }}>
+                        {b.name.split(' ').map(w => w[0]).join('').slice(0, 2)}
+                      </div>
+                    )}
                     <div>
                       <div style={{ fontFamily: 'var(--font-display)', fontSize: 16 }}>{b.name}</div>
                       {b.description && <div style={{ fontSize: 11, color: 'var(--ink-muted)', marginTop: 2, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.description}</div>}

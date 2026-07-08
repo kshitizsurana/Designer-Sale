@@ -5,9 +5,9 @@ const { useState: useMState, useEffect: useMEffect, useMemo: useMemo_M } = React
 
 function MerchantFormModal({ merchant, onSave, onClose }) {
   const [form, setForm] = useMState(merchant || {
-    name: '', city: '', state: '', focus: '', email: '', phone: '',
+    name: '', city: '', suburb: '', state: '', street_address: '', focus: '', email: '', phone: '',
     website: '', description: '', online: true, inStore: true,
-    facebook: '', instagram: '', bestContactMethod: 'email', look_id: ''
+    facebook: '', instagram: '', bestContactMethod: 'email', look_id: '', logo_image: '', status: 'active'
   });
   const [errors, setErrors] = useMState({});
 
@@ -59,6 +59,16 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
                 {errors.state && <div className="form-error">{errors.state}</div>}
               </div>
             </div>
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Suburb</label>
+                <input className="form-input" value={form.suburb || ''} onChange={e => set('suburb', e.target.value)} placeholder="e.g. Paddington" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Street address</label>
+                <input className="form-input" value={form.street_address || ''} onChange={e => set('street_address', e.target.value)} placeholder="Street address" />
+              </div>
+            </div>
             <div className="form-group">
               <label className="form-label">Focus / Speciality</label>
               <input className="form-input" value={form.focus || ''} onChange={e => set('focus', e.target.value)} placeholder="e.g. Resort & holiday" />
@@ -88,6 +98,10 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
               <label className="form-label">Website URL</label>
               <input className="form-input" type="url" value={form.website || ''} onChange={e => set('website', e.target.value)} placeholder="https://boutique.com.au" />
             </div>
+            <div className="form-group">
+              <label className="form-label">Logo / boutique image URL</label>
+              <input className="form-input" type="url" value={form.logo_image || ''} onChange={e => set('logo_image', e.target.value)} placeholder="https://..." />
+            </div>
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Facebook URL</label>
@@ -104,6 +118,13 @@ function MerchantFormModal({ merchant, onSave, onClose }) {
                 <option value="email">Email</option>
                 <option value="facebook">Facebook</option>
                 <option value="instagram">Instagram</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-input admin-select" value={form.status || 'active'} onChange={e => set('status', e.target.value)}>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
             <div style={{ display: 'flex', gap: 24 }}>

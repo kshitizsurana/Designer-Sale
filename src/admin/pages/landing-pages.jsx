@@ -4,7 +4,7 @@ const { useState, useEffect, useMemo } = React;
 
 function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
   const [form, setForm] = useState(landingPage || {
-    title: '', short_description: '', image: '', products: [], look_id: '', status: 'published'
+    title: '', short_description: '', image: '', products: [], look_id: '', status: 'published', sort_order: 0, filter_rules: {}
   });
   const [errors, setErrors] = useState({});
   const [q, setQ] = useState('');
@@ -21,7 +21,11 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
   function submit(e) {
     e.preventDefault();
     if (!validate()) return;
-    onSave(form);
+    onSave({
+      ...form,
+      sort_order: Number(form.sort_order) || 0,
+      filter_rules: form.filter_rules || {}
+    });
   }
 
   function toggleProduct(pId) {
@@ -78,6 +82,25 @@ function LandingPageFormModal({ landingPage, allProducts, onSave, onClose }) {
                 <option value="published">Published</option>
                 <option value="archived">Archived</option>
               </select>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="form-label">Sort order</label>
+                <input type="number" className="form-input" value={form.sort_order || 0} onChange={e => set('sort_order', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Minimum discount rule</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="95"
+                  className="form-input"
+                  value={form.filter_rules?.minDiscount || ''}
+                  onChange={e => set('filter_rules', { ...(form.filter_rules || {}), minDiscount: e.target.value ? Number(e.target.value) : undefined })}
+                  placeholder="e.g. 70"
+                />
+              </div>
             </div>
 
             <div className="form-group">
@@ -204,7 +227,7 @@ function AdminLandingPages({ toast, initialAction, onActionHandled }) {
                   <button className="btn btn-gold btn-sm" onClick={() => { setEditItem(null); setShowForm(true); }}><AIcon.Plus /> Create page</button>
                 </div>
               </td></tr>
-            ) : landingPages.map(lp => (
+            ) : landingPages.slice().sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)).map(lp => (
               <tr key={lp.id}>
                 <td className="col-thumb">
                   {lp.image ? <img src={lp.image} className="thumb-img" style={{ width: 60 }} alt="" /> : <div className="thumb-ph">Img</div>}

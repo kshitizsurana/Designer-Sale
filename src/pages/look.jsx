@@ -1,43 +1,18 @@
 /* global React, Icon, ProductCard */
-// LookPage — Complete "Shop by Style" page for each fashion look (Formal, Bohemian, Casuals)
+// LookPage — complete database-driven page for each fashion look.
 
 const { useState: useLookState, useEffect: useLookEffect, useMemo: useLookMemo } = React;
 
-// ---- Per-look editorial config ---- //
-const LOOK_CONFIG = {
-  'formal-wear': {
-    palette: { hero: 'linear-gradient(135deg,#1a1814 0%,#2e2820 50%,#3d3328 100%)', accent: '#C9A84C', badge: '#2A2520' },
-    icon: '👔',
-    tagline: 'Boardroom to dinner. Sharply done.',
-    keywords: ['Tailored', 'Office Wear', 'Young Professionals', 'Luxury', 'Evening'],
-    stats: [{ label: 'Boutiques', value: '10+' }, { label: 'Avg Saving', value: '42%' }, { label: 'Styles', value: '180+' }],
-    feature: { title: 'The Power Wardrobe', body: 'Structured silhouettes and elevated fabrics from Australia\'s most discerning boutiques. From the boardroom to dinner — every piece earns its place.', cta: 'Shop Tailored' },
-  },
-  'bohemian': {
-    palette: { hero: 'linear-gradient(135deg,#2d1f0e 0%,#4a3020 50%,#6b4a28 100%)', accent: '#D4956A', badge: '#5C3418' },
-    icon: '🌿',
-    tagline: 'Earth, print & effortless ease.',
-    keywords: ['Boho Chic', 'Floral', 'Earthy', 'Flowing', 'Artisan'],
-    stats: [{ label: 'Boutiques', value: '4+' }, { label: 'Avg Saving', value: '38%' }, { label: 'Styles', value: '120+' }],
-    feature: { title: 'Free-Spirit Fashion', body: 'Flowing silhouettes, botanical prints, and artisan-crafted pieces that travel from beach to table with effortless confidence.', cta: 'Shop Bohemian' },
-  },
-  'casuals': {
-    palette: { hero: 'linear-gradient(135deg,#0e1219 0%,#1a2030 50%,#263040 100%)', accent: '#7EB8D4', badge: '#1a2030' },
-    icon: '👟',
-    tagline: 'Everyday looks, zero effort required.',
-    keywords: ['Baggy Fits', 'Streetwear', 'Basics', 'Teens', 'Relaxed'],
-    stats: [{ label: 'Boutiques', value: '5+' }, { label: 'Avg Saving', value: '45%' }, { label: 'Styles', value: '150+' }],
-    feature: { title: 'Effortless Every Day', body: 'Laid-back cuts and contemporary basics from Australia\'s coolest independent boutiques. Dress down without looking like it.', cta: 'Shop Casuals' },
-  },
-  'resort-wear': {
-    palette: { hero: 'linear-gradient(135deg,#0a1f2e 0%,#0d3349 50%,#1a5070 100%)', accent: '#5BBFE8', badge: '#0a1f2e' },
-    icon: '🌴',
-    tagline: 'Vacation mode, always.',
-    keywords: ['Vacation', 'Poolside', 'Cruise', 'Summer', 'Escape'],
-    stats: [{ label: 'Boutiques', value: '3+' }, { label: 'Avg Saving', value: '40%' }, { label: 'Styles', value: '100+' }],
-    feature: { title: 'The Great Escape', body: 'Breezy fabrics and sunset-ready silhouettes from Australia\'s best boutiques. The ultimate collection for when the out-of-office is on.', cta: 'Shop Resort' },
-  },
-};
+const LOOK_PALETTES = [
+  { hero: 'linear-gradient(135deg,#1a1814 0%,#2e2820 50%,#3d3328 100%)', accent: '#C9A84C' },
+  { hero: 'linear-gradient(135deg,#2d1f0e 0%,#4a3020 50%,#6b4a28 100%)', accent: '#D4956A' },
+  { hero: 'linear-gradient(135deg,#0e1219 0%,#1a2030 50%,#263040 100%)', accent: '#7EB8D4' },
+  { hero: 'linear-gradient(135deg,#0a1f2e 0%,#0d3349 50%,#1a5070 100%)', accent: '#5BBFE8' },
+];
+
+function paletteForLook(look) {
+  return LOOK_PALETTES[Math.abs(Number(look?.id || 1) - 1) % LOOK_PALETTES.length];
+}
 
 const SORT_OPTIONS = [
   { value: 'discount', label: 'Biggest Discount' },
@@ -84,7 +59,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
     );
   }
 
-  const cfg = LOOK_CONFIG[look.slug] || LOOK_CONFIG['formal-wear'];
+  const palette = paletteForLook(look);
   const allLookProducts = data.products.filter(p => p.look_id === look.id || (data.merchants.find(m => m.id === p.merchantId)?.look_id === look.id));
   const lookMerchants = data.merchants.filter(m => m.look_id === look.id);
 
@@ -97,11 +72,10 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
 
   const lookLandingPages = (data.landing_pages || []).filter(lp => lp.look_id === look.id && lp.status !== 'archived');
 
-  const keywords = look.keywords && look.keywords.length > 0 ? look.keywords : cfg.keywords;
-  const tagline = look.tagline || cfg.tagline;
-  const featureTitle = look.feature_title || cfg.feature.title;
-  const featureBody = look.feature_body || cfg.feature.body;
-  const featureCta = look.feature_cta || cfg.feature.cta;
+  const keywords = Array.isArray(look.keywords) ? look.keywords.filter(Boolean) : [];
+  const featureTitle = look.feature_title || look.name;
+  const featureBody = look.feature_body || look.description || `Explore ${look.name} pieces from Australian boutiques.`;
+  const featureCta = look.feature_cta || `Shop ${look.name}`;
 
   const otherLooks = data.looks.filter(l => l.id !== look.id);
 
@@ -133,7 +107,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
       {/* ════════════════════════════════
           HERO BANNER
       ════════════════════════════════ */}
-      <section style={{ position: 'relative', overflow: 'hidden', background: cfg.palette.hero, minHeight: 520 }}>
+      <section style={{ position: 'relative', overflow: 'hidden', background: palette.hero, minHeight: 520 }}>
         {look.hero_image && (
           <img
             src={look.hero_image}
@@ -155,22 +129,22 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
           </div>
 
           <div style={{ maxWidth: 640 }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: cfg.palette.accent, marginBottom: 14 }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: palette.accent, marginBottom: 14 }}>
               Shop by Style · {look.name}
             </div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(48px, 6vw, 86px)', lineHeight: 1.0, letterSpacing: '-0.018em', color: '#fff', margin: '0 0 18px' }}>
               {look.name}
             </h1>
             <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.82)', lineHeight: 1.6, marginBottom: 24, maxWidth: 520 }}>
-              {look.description || tagline}
+              {look.description}
             </p>
 
             {/* Keyword pills */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 32 }}>
+            {keywords.length > 0 && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 32 }}>
               {keywords.map(k => (
                 <span key={k} style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '5px 12px', border: '1px solid rgba(255,255,255,0.28)', color: 'rgba(255,255,255,0.7)', borderRadius: 2 }}>{k}</span>
               ))}
-            </div>
+            </div>}
 
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <a href={`#look-products`} className="btn btn-gold" onClick={e => { e.preventDefault(); document.getElementById('look-products')?.scrollIntoView({ behavior: 'smooth' }); }}>
@@ -186,7 +160,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
           <div style={{ display: 'flex', gap: 0, border: '1px solid rgba(255,255,255,0.14)', maxWidth: 420, overflow: 'hidden', borderRadius: 2 }}>
             {dynamicStats.map((s, i) => (
               <div key={i} style={{ flex: 1, padding: '14px 20px', borderRight: i < dynamicStats.length - 1 ? '1px solid rgba(255,255,255,0.14)' : 'none', background: 'rgba(255,255,255,0.06)' }}>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: cfg.palette.accent, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: palette.accent, lineHeight: 1 }}>{s.value}</div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginTop: 4 }}>{s.label}</div>
               </div>
             ))}
@@ -295,7 +269,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
         <div className="container-wide" style={{ padding: '0 var(--pad-lg)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--pad-xl)', alignItems: 'center' }}>
             {/* Image panel */}
-            <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', background: cfg.palette.hero }}>
+            <div style={{ position: 'relative', aspectRatio: '3/4', overflow: 'hidden', background: palette.hero }}>
               {look.hero_image && (
                 <img
                   src={look.hero_image}
@@ -306,12 +280,12 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
               )}
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 60%)' }} />
               <div style={{ position: 'absolute', bottom: 24, left: 24, right: 24 }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: cfg.palette.accent }}>{look.name}</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: palette.accent }}>{look.name}</span>
               </div>
             </div>
             {/* Copy panel */}
             <div style={{ padding: '0 var(--pad-md)' }}>
-              <div className="eyebrow" style={{ color: cfg.palette.accent, marginBottom: 18 }}>The Look</div>
+              <div className="eyebrow" style={{ color: palette.accent, marginBottom: 18 }}>The Look</div>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(34px, 3.6vw, 56px)', lineHeight: 1.04, letterSpacing: '-0.015em', color: '#fff', marginBottom: 22 }}>
                 {featureTitle}
               </h2>
@@ -327,11 +301,11 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                 </button>
               </div>
               {/* Keyword tags */}
-              <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {keywords.length > 0 && <div style={{ marginTop: 32, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {keywords.map(k => (
                   <span key={k} style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', padding: '4px 10px', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.5)', borderRadius: 2 }}>{k}</span>
                 ))}
-              </div>
+              </div>}
             </div>
           </div>
         </div>
@@ -421,7 +395,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
             </div>
             <div className="look-explore-grid">
               {otherLooks.map(l => {
-                const oCfg = LOOK_CONFIG[l.slug] || {};
+                const otherPalette = paletteForLook(l);
                 const lCount = data.products.filter(p => p.look_id === l.id).length;
                 return (
                   <button
@@ -438,12 +412,12 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
                     )}
-                    <div className="look-explore-overlay" style={{ background: oCfg.palette ? oCfg.palette.hero : '#000', opacity: l.hero_image ? 0.45 : 0.9 }} />
+                    <div className="look-explore-overlay" style={{ background: otherPalette.hero, opacity: l.hero_image ? 0.45 : 0.9 }} />
                     <div className="look-explore-content">
-                      <div className="look-explore-eyebrow" style={{ color: oCfg.palette ? oCfg.palette.accent : 'var(--gold-soft)' }}>Shop by Style</div>
+                      <div className="look-explore-eyebrow" style={{ color: otherPalette.accent }}>Shop by Style</div>
                       <h3 className="look-explore-title">{l.name}</h3>
-                      <p className="look-explore-tagline">{l.tagline || oCfg.tagline || l.description}</p>
-                      <span className="look-explore-cta" style={{ color: oCfg.palette ? oCfg.palette.accent : '#fff' }}>
+                      <p className="look-explore-tagline">{l.tagline || l.description}</p>
+                      <span className="look-explore-cta" style={{ color: otherPalette.accent }}>
                         View {l.name} <Icon.ArrowRight />
                       </span>
                       {lCount > 0 && <div className="look-explore-count">{lCount} items on sale</div>}

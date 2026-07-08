@@ -6,9 +6,10 @@ const { useState: usePState, useEffect: usePEffect, useMemo: useMemo_P } = React
 function ProductFormModal({ product, categories, merchants, brands, onSave, onClose }) {
   const [form, setForm] = usePState(product || {
     title: '', category: 'maxi-dresses', merchantId: merchants[0]?.id || '', brandId: brands[0]?.id || '',
-    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', url: '', inventory: 0, look_id: ''
+    rrp: '', sale: '', newIn: false, sizes: [], image: '', description: '', url: '', inventory: 0, look_id: '', status: 'active', tags: []
   });
   const [sizeInput, setSizeInput] = usePState('');
+  const [tagsStr, setTagsStr] = usePState(Array.isArray(product?.tags) ? product.tags.join(', ') : '');
   const [errors, setErrors] = usePState({});
   const [uploading, setUploading] = usePState(false);
   const [uploadMsg, setUploadMsg] = usePState('');
@@ -64,6 +65,7 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
     if (!validate()) return;
     onSave({
       ...form,
+      tags: tagsStr.split(',').map(t => t.trim()).filter(Boolean),
       rrp: Number(form.rrp),
       sale: Number(form.sale),
       inventory: Number(form.inventory) || 0
@@ -179,6 +181,19 @@ function ProductFormModal({ product, categories, merchants, brands, onSave, onCl
             <div className="form-group">
               <label className="form-label">Description</label>
               <textarea className="form-input" rows="3" value={form.description || ''} onChange={e => set('description', e.target.value)} placeholder="About this piece..." style={{ resize: 'vertical' }} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tags</label>
+              <input className="form-input" value={tagsStr} onChange={e => setTagsStr(e.target.value)} placeholder="linen, clearance, 70-off" />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select className="form-input admin-select" value={form.status || 'active'} onChange={e => set('status', e.target.value)}>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
             </div>
 
             <div className="toggle-wrap" onClick={() => set('newIn', !form.newIn)}>
