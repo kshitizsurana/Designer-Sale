@@ -24,10 +24,11 @@ const SORT_OPTIONS = [
 function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onShop, onNav }) {
   const look = data.looks.find(l => l.slug === lookSlug);
   const [sort, setSort] = useLookState('discount');
-  const [activeCategory, setActiveCategory] = useLookState('all');
+  const [brandFilter, setBrandFilter] = useLookState('all');
   const [showAll, setShowAll] = useLookState(false);
   const [boutiquePage, setBoutiquePage] = useLookState(0);
   const BOUTIQUES_PER_PAGE = 4;
+  const INITIAL_PRODUCTS = 12;
 
   useLookEffect(() => {
     if (look) {
@@ -45,7 +46,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   }, [look]);
 
   // Reset filters when slug changes
-  useLookEffect(() => { setSort('discount'); setActiveCategory('all'); setShowAll(false); setBoutiquePage(0); }, [lookSlug]);
+  useLookEffect(() => { setSort('discount'); setBrandFilter('all'); setShowAll(false); setBoutiquePage(0); }, [lookSlug]);
 
   if (!look) {
     return (
@@ -63,13 +64,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   const allLookProducts = data.products.filter(p => p.look_id === look.id || (data.merchants.find(m => m.id === p.merchantId)?.look_id === look.id));
   const lookMerchants = data.merchants.filter(m => m.look_id === look.id);
 
-  // Derive active collections for this look
-  const lookCollections = useLookMemo(() => {
-    return (data.collections || [])
-      .filter(c => c.look_id === look.id && c.status !== 'hidden')
-      .sort((a, b) => a.display_order - b.display_order);
-  }, [data.collections, look.id]);
-
+  // Landing pages for this look
   const lookLandingPages = (data.landing_pages || []).filter(lp => lp.look_id === look.id && lp.status !== 'archived');
 
   const keywords = Array.isArray(look.keywords) ? look.keywords.filter(Boolean) : [];
@@ -79,27 +74,43 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
 
   const otherLooks = data.looks.filter(l => l.id !== look.id);
 
-  const categoryGroups = useLookMemo(() => {
-    const groups = new Map();
+  // Brand list for filter
+  const lookBrands = useLookMemo(() => {
+    const seen = new Set();
+    const brands = [];
     allLookProducts.forEach(p => {
-      const cat = data.categories.find(c => c.id === p.category);
-      if (!cat) return;
-      if (!groups.has(cat.id)) groups.set(cat.id, { category: cat, products: [] });
-      groups.get(cat.id).products.push(p);
+      const brandName = p.brand || (data.brands?.find(b => b.id === p.brandId)?.name) || p.brandId;
+      if (brandName && !seen.has(p.brandId)) {
+        seen.add(p.brandId);
+        brands.push({ id: p.brandId, name: brandName });
+      }
     });
-    return Array.from(groups.values())
-      .filter(g => g.products.length > 0)
-      .sort((a, b) => b.products.length - a.products.length);
-  }, [allLookProducts, data.categories]);
+    return brands.sort((a, b) => a.name.localeCompare(b.name));
+  }, [allLookProducts]);
 
-  const avgSaving = allLookProducts.length > 0 
-    ? Math.round(allLookProducts.reduce((sum, p) => sum + (p.discountPct || 0), 0) / allLookProducts.length) 
+  // Filtered + sorted products (all in one grid, no category subdivisions)
+  const filteredProducts = useLookMemo(() => {
+    let prods = allLookProducts;
+    if (brandFilter !== 'all') prods = prods.filter(p => p.brandId === brandFilter);
+    switch (sort) {
+      case 'discount': return [...prods].sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
+      case 'new': return [...prods].sort((a, b) => (b.newIn ? 1 : 0) - (a.newIn ? 1 : 0));
+      case 'price-asc': return [...prods].sort((a, b) => (a.sale || 0) - (b.sale || 0));
+      case 'price-desc': return [...prods].sort((a, b) => (b.sale || 0) - (a.sale || 0));
+      default: return prods;
+    }
+  }, [allLookProducts, brandFilter, sort]);
+
+  const visibleProducts = showAll ? filteredProducts : filteredProducts.slice(0, INITIAL_PRODUCTS);
+
+  const avgSaving = allLookProducts.length > 0
+    ? Math.round(allLookProducts.reduce((sum, p) => sum + (p.discountPct || 0), 0) / allLookProducts.length)
     : 0;
 
   const dynamicStats = [
     { label: 'Boutiques', value: `${lookMerchants.length || 5}+` },
     { label: 'Avg Saving', value: `${avgSaving || 35}%` },
-    { label: 'Styles', value: `${allLookProducts.length || 100}+` }
+    { label: 'Pieces', value: `${allLookProducts.length || 100}+` }
   ];
 
   return (
@@ -168,99 +179,144 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
         </div>
       </section>
 
-
-
       {/* ════════════════════════════════
-          CURATED COLLECTIONS & LANDING PAGES
+          CURATED SALES — landing pages tied to this look
+          (matches how home page shows Featured Sales)
       ════════════════════════════════ */}
-      <div id="look-products">
-        {lookLandingPages.map((lp, idx) => (
-          <React.Fragment key={lp.id}>
-            {idx > 0 && <hr className="divider-rule" />}
-            <section className="section container-wide">
-              <div className="section-head">
-                <div>
-                  <div className="eyebrow" style={{ marginBottom: 10 }}>Special Feature</div>
-                  <h2>{lp.title}</h2>
-                  {lp.short_description && <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{lp.short_description}</p>}
-                </div>
-                <button className="section-head-link" onClick={() => onNav('landing-page', null, null, lp.id)}>
-                  View Campaign <Icon.ArrowRight />
-                </button>
-              </div>
-              {lp.image && (
-                <div style={{ width: '100%', height: 320, background: '#eee', marginBottom: 32, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-                  <img src={lp.image} alt={lp.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.1)' }} />
-                </div>
-              )}
-            </section>
-          </React.Fragment>
-        ))}
-
-        {lookCollections.length === 0 && lookLandingPages.length === 0 ? (
-          <section className="section container-wide" style={{ textAlign: 'center', padding: '120px 20px', color: 'var(--ink-muted)' }}>
-            <p>No collections have been curated for this style yet.</p>
-          </section>
-        ) : (
-          lookCollections.map((collection, idx) => {
-            // Resolve products for this collection
-            const pids = collection.product_ids || [];
-            const pMap = new Map(data.products.map(p => [p.id, p]));
-            const prods = pids.map(id => pMap.get(id)).filter(Boolean);
-    
-            if (prods.length === 0) return null;
-    
-            return (
-              <React.Fragment key={collection.id}>
-                {(idx > 0 || lookLandingPages.length > 0) && <hr className="divider-rule" />}
-                <section className="section container-wide">
-                  <div className="section-head">
-                    <div>
-                      <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Collection</div>
-                      <h2>{collection.title}</h2>
-                      {collection.description && (
-                        <p style={{ marginTop: 8, color: 'var(--ink-muted)', fontSize: 14, maxWidth: 600 }}>{collection.description}</p>
-                      )}
-                    </div>
-                    <button className="section-head-link" onClick={() => onNav('collection', look.slug, null, collection.slug)}>
-                      View All {prods.length} <Icon.ArrowRight />
-                    </button>
-                  </div>
-                  <div className="product-grid">
-                    {prods.slice(0, 8).map(p => (
-                      <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
-                    ))}
-                  </div>
-                </section>
-              </React.Fragment>
-            );
-          })
-        )}
-      </div>
-
-      {/* Category-wise product sections */}
-      {categoryGroups.map((group, idx) => (
-        <React.Fragment key={group.category.id}>
+      {lookLandingPages.length > 0 && (
+        <>
           <hr className="divider-rule" />
           <section className="section container-wide">
-            <div className="section-head">
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>{look.name}</div>
-                <h2>{group.category.label}</h2>
-              </div>
-              <button className="section-head-link" onClick={() => onNav('category', group.category.id)}>
-                View all {group.products.length} <Icon.ArrowRight />
-              </button>
+            <div className="section-head" style={{ textAlign: 'center', display: 'block', marginBottom: 40 }}>
+              <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Sales</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3.5vw, 42px)' }}>{look.name} Featured Sales.</h2>
             </div>
-            <div className="product-grid">
-              {group.products.slice(0, 8).map(p => (
-                <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {lookLandingPages.map((lp, i) => (
+                <button
+                  key={lp.id}
+                  className="fade-in"
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 360,
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    border: '1px solid var(--line)',
+                    animationDelay: `${i * 60}ms`,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    background: palette.hero,
+                  }}
+                  onClick={() => onNav('landing-page', null, null, lp.id)}
+                >
+                  {lp.image && (
+                    <img
+                      src={lp.image}
+                      alt={lp.title}
+                      loading="lazy"
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 600ms ease' }}
+                      onError={e => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
+                  <div style={{ position: 'relative', zIndex: 1, padding: '36px 40px', color: '#fff' }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 2.5vw, 36px)', marginBottom: 10 }}>{lp.title}</h3>
+                    <p style={{ fontSize: 15, opacity: 0.85, marginBottom: 18, maxWidth: 560 }}>{lp.short_description}</p>
+                    <span className="btn btn-ghost" style={{ border: '1px solid rgba(255,255,255,0.4)', color: '#fff', backdropFilter: 'blur(4px)' }}>
+                      Shop Sale <Icon.ArrowRight style={{ marginLeft: 8 }} />
+                    </span>
+                  </div>
+                </button>
               ))}
             </div>
           </section>
-        </React.Fragment>
-      ))}
+        </>
+      )}
+
+      {/* ════════════════════════════════
+          ALL PRODUCTS — single filterable grid (no category subdivisions)
+      ════════════════════════════════ */}
+      <div id="look-products">
+        <hr className="divider-rule" />
+        <section className="section container-wide">
+          <div className="section-head" style={{ marginBottom: 28 }}>
+            <div>
+              <div className="eyebrow" style={{ marginBottom: 10 }}>{allLookProducts.length} pieces on sale</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(26px, 3vw, 38px)', lineHeight: 1.1 }}>
+                Shop {look.name}
+              </h2>
+            </div>
+          </div>
+
+          {/* Filter bar */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 32, alignItems: 'center', paddingBottom: 20, borderBottom: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Sort</span>
+              <select
+                className="form-input"
+                style={{ fontSize: 13, padding: '6px 12px', border: '1px solid var(--line)', background: 'var(--bg-card)', color: 'var(--ink)', borderRadius: 4, appearance: 'auto', minWidth: 180 }}
+                value={sort}
+                onChange={e => setSort(e.target.value)}
+              >
+                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            {lookBrands.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>Brand</span>
+                <select
+                  className="form-input"
+                  style={{ fontSize: 13, padding: '6px 12px', border: '1px solid var(--line)', background: 'var(--bg-card)', color: 'var(--ink)', borderRadius: 4, appearance: 'auto', minWidth: 180 }}
+                  value={brandFilter}
+                  onChange={e => { setBrandFilter(e.target.value); setShowAll(false); }}
+                >
+                  <option value="all">All Brands ({allLookProducts.length})</option>
+                  {lookBrands.map(b => (
+                    <option key={b.id} value={b.id}>{b.name} ({allLookProducts.filter(p => p.brandId === b.id).length})</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {(brandFilter !== 'all') && (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => { setBrandFilter('all'); setShowAll(false); }}
+                style={{ fontSize: 12 }}
+              >
+                Clear filters
+              </button>
+            )}
+            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-muted)' }}>
+              {filteredProducts.length} results
+            </span>
+          </div>
+
+          {filteredProducts.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--ink-muted)' }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>🛍️</div>
+              <p>No products found for this filter. <button className="btn btn-ghost btn-sm" onClick={() => { setBrandFilter('all'); }}>Clear filters</button></p>
+            </div>
+          ) : (
+            <>
+              <div className="product-grid">
+                {visibleProducts.map(p => (
+                  <ProductCard key={p.id} product={p} variant={cardVariant} isWishlisted={wishlist.has(p.id)} onToggleWishlist={onToggleWishlist} onShop={onShop} onNav={onNav} />
+                ))}
+              </div>
+              {!showAll && filteredProducts.length > INITIAL_PRODUCTS && (
+                <div style={{ textAlign: 'center', marginTop: 40 }}>
+                  <button className="btn btn-outline" onClick={() => setShowAll(true)}>
+                    Show all {filteredProducts.length} pieces <Icon.ArrowRight />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </div>
 
       {/* ════════════════════════════════
           EDITORIAL SPLIT — look feature
@@ -313,7 +369,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
 
 
       {/* ════════════════════════════════
-          BOUTIQUES (Paginated) — before Explore Other Looks
+          BOUTIQUES (Paginated)
       ════════════════════════════════ */}
       {lookMerchants.length > 0 && (
         <>
@@ -337,6 +393,9 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(168,133,74,0.12)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
+                  {b.logo_image && (
+                    <img src={b.logo_image} alt={b.name} style={{ width: '100%', height: 80, objectFit: 'contain', marginBottom: 12, borderRadius: 4 }} onError={e => { e.currentTarget.style.display = 'none'; }} />
+                  )}
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--ink)', marginBottom: 6, letterSpacing: '-0.01em' }}>{b.name}</div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--ink-muted)' }}>{b.city} · {b.state}</div>
                   {b.focus && <div style={{ fontSize: 12, color: 'var(--ink-soft)', marginTop: 8, lineHeight: 1.4 }}>{b.focus}</div>}
@@ -381,46 +440,87 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
       )}
 
       {/* ════════════════════════════════
-          EXPLORE OTHER LOOKS (compact tiles)
+          EXPLORE OTHER LOOKS — premium editorial grid
       ════════════════════════════════ */}
       {otherLooks.length > 0 && (
         <>
           <hr className="divider-rule" />
           <section className="section container-wide">
-            <div className="section-head" style={{ marginBottom: 24 }}>
-              <div>
-                <div className="eyebrow" style={{ marginBottom: 10 }}>Discover more styles</div>
-                <h2>Explore Other <em className="serif-it" style={{ color: 'var(--gold-deep)' }}>Looks</em></h2>
-              </div>
+            <div style={{ textAlign: 'center', marginBottom: 48 }}>
+              <div className="eyebrow" style={{ marginBottom: 12 }}>Discover more styles</div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 52px)', letterSpacing: '-0.015em' }}>
+                Explore Other <em style={{ color: 'var(--gold-deep)', fontStyle: 'italic' }}>Looks</em>
+              </h2>
+              <p style={{ color: 'var(--ink-muted)', fontSize: 15, marginTop: 12, maxWidth: 480, margin: '12px auto 0' }}>
+                Four distinct styles. One destination for Australian designer sales.
+              </p>
             </div>
-            <div className="look-explore-grid">
-              {otherLooks.map(l => {
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: 16,
+            }}>
+              {otherLooks.map((l, idx) => {
                 const otherPalette = paletteForLook(l);
                 const lCount = data.products.filter(p => p.look_id === l.id).length;
+                const lMerchants = data.merchants.filter(m => m.look_id === l.id).length;
+                // First tile spans 2 columns on the left for visual drama
+                const isFeature = idx === 0;
                 return (
                   <button
                     key={l.id}
-                    className="tile fade-in look-explore-tile"
                     onClick={() => onNav('look', null, null, l.slug)}
+                    style={{
+                      position: 'relative',
+                      overflow: 'hidden',
+                      borderRadius: 12,
+                      border: '1px solid var(--line)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      padding: 0,
+                      height: isFeature ? 460 : 300,
+                      gridColumn: isFeature ? 'span 2' : 'span 1',
+                      background: otherPalette.hero,
+                      transition: 'transform 220ms ease, box-shadow 220ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.015)'; e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.22)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     {l.hero_image && (
                       <img
                         src={l.hero_image}
                         alt={l.name}
                         loading="lazy"
-                        className="look-explore-img"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 600ms ease' }}
                         onError={e => { e.currentTarget.style.display = 'none'; }}
                       />
                     )}
-                    <div className="look-explore-overlay" style={{ background: otherPalette.hero, opacity: l.hero_image ? 0.45 : 0.9 }} />
-                    <div className="look-explore-content">
-                      <div className="look-explore-eyebrow" style={{ color: otherPalette.accent }}>Shop by Style</div>
-                      <h3 className="look-explore-title">{l.name}</h3>
-                      <p className="look-explore-tagline">{l.tagline || l.description}</p>
-                      <span className="look-explore-cta" style={{ color: otherPalette.accent }}>
-                        View {l.name} <Icon.ArrowRight />
-                      </span>
-                      {lCount > 0 && <div className="look-explore-count">{lCount} items on sale</div>}
+                    {/* Gradient overlay */}
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }} />
+
+                    {/* Content */}
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: isFeature ? '32px 36px' : '24px 28px' }}>
+                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: otherPalette.accent, marginBottom: 8 }}>
+                        Shop by Style
+                      </div>
+                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: isFeature ? 38 : 26, lineHeight: 1.05, color: '#fff', marginBottom: 10, letterSpacing: '-0.012em' }}>
+                        {l.name}
+                      </h3>
+                      {isFeature && l.description && (
+                        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.78)', lineHeight: 1.5, marginBottom: 18, maxWidth: 420 }}>
+                          {l.description}
+                        </p>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: otherPalette.accent, display: 'flex', alignItems: 'center', gap: 6 }}>
+                          View {l.name} <Icon.ArrowRight />
+                        </span>
+                        {lCount > 0 && (
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 20, backdropFilter: 'blur(4px)' }}>
+                            {lCount} on sale · {lMerchants} boutiques
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </button>
                 );
