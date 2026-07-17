@@ -120,34 +120,45 @@ function BoutiquesPage({ data, onNav }) {
             </div>
           ) : (
             <div className="boutique-grid">
-              {filtered.map((b, i) => (
-                <article key={b.id} className="boutique-card fade-in" style={{ animationDelay: `${i * 40}ms` }}>
-                  <div className="boutique-logo">
-                    {b.name.split(' ').slice(0, 3).map(w => w[0]).join('')}
-                  </div>
-                  <div>
-                    <div className="boutique-name">{b.name}</div>
-                    <div className="boutique-loc" style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Icon.Pin /> {b.city}, {b.state}
-                      <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
-                        {b.online && <span style={{ fontSize: 9 }}>● Online</span>}
-                        {b.inStore && <span style={{ fontSize: 9 }}>● In-store</span>}
-                      </span>
+              {filtered.map((b, i) => {
+                const productCount = data.products ? data.products.filter(p => p.merchantId === b.id).length : (b.items || 0);
+                return (
+                  <article
+                    key={b.id}
+                    className="boutique-card fade-in"
+                    style={{ animationDelay: `${i * 40}ms`, cursor: 'pointer' }}
+                    onClick={() => onNav('merchant', null, null, b.id)}
+                  >
+                    <div className="boutique-logo">
+                      {b.name.split(' ').slice(0, 3).map(w => w[0]).join('')}
                     </div>
-                  </div>
-                  <div className="boutique-desc">
-                    {b.focus} · curated selection of premium Australian and international labels.
-                  </div>
-                  <div className="boutique-foot">
-                    <span className="boutique-items">
-                      <strong>{b.items}</strong> on sale
-                    </span>
-                    <button className="btn btn-outline btn-sm">
-                      View sales <Icon.ArrowRight />
-                    </button>
-                  </div>
-                </article>
-              ))}
+                    <div>
+                      <div className="boutique-name">{b.name}</div>
+                      <div className="boutique-loc" style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <Icon.Pin /> {b.city}, {b.state}
+                        <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
+                          {b.online && <span style={{ fontSize: 9 }}>● Online</span>}
+                          {b.inStore && <span style={{ fontSize: 9 }}>● In-store</span>}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="boutique-desc">
+                      {b.focus ? `${b.focus} · curated selection of premium Australian and international labels.` : b.description || 'Premium Australian boutique.'}
+                    </div>
+                    <div className="boutique-foot">
+                      <span className="boutique-items">
+                        <strong>{productCount}</strong> on sale
+                      </span>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        onClick={e => { e.stopPropagation(); onNav('merchant', null, null, b.id); }}
+                      >
+                        View sales <Icon.ArrowRight />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
