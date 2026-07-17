@@ -7,7 +7,10 @@ function BlogList({ onNav }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://designer-sale.vercel.app/api/blogs')
+    const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `${window.location.protocol}//${window.location.hostname}:3000/api`
+      : '/api';
+    fetch(`${apiBase}/blogs`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -62,7 +65,10 @@ function BlogPost({ slug, onNav }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('https://designer-sale.vercel.app/api/blogs')
+    const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? `${window.location.protocol}//${window.location.hostname}:3000/api`
+      : '/api';
+    fetch(`${apiBase}/blogs`)
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) {

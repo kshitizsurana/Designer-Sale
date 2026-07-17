@@ -11,6 +11,7 @@ function MerchantPage({ merchantId, data, cardVariant, wishlist, onToggleWishlis
   const rawProducts = data.products.filter(p => p.merchantId === merchantId);
 
   if (!merchant) {
+
     return (
       <main>
         <div className="container-wide" style={{ padding: 'var(--pad-2xl) 0', textAlign: 'center' }}>

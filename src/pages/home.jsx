@@ -256,50 +256,152 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
 
       <hr className="divider-rule" />
 
-      {/* ---- Blogs Section ---- */}
-      {data.blogs && data.blogs.length > 0 && (
-        <section className="section container-wide">
-          <div className="section-head">
-            <div>
-              <div className="eyebrow" style={{ marginBottom: 10 }}>Editor's Desk</div>
-              <h2>Style Notes & Guides.</h2>
+      {/* ---- Blogs / Editorial Section ---- */}
+      {data.blogs && data.blogs.filter(b => b.status === 'published').length > 0 && (() => {
+        const publishedBlogs = data.blogs.filter(b => b.status === 'published');
+        const featured = publishedBlogs[0];
+        const rest = publishedBlogs.slice(1, 4);
+        return (
+          <section className="section container-wide" style={{ paddingBottom: 'var(--pad-2xl)' }}>
+            <div className="section-head" style={{ marginBottom: 48 }}>
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 10 }}>Editor's Desk</div>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Style Notes &amp; Guides.</h2>
+              </div>
+              <button
+                className="section-head-link"
+                onClick={() => onNav('blog')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+              >
+                View all articles →
+              </button>
             </div>
-            <a className="section-head-link" href="#/" onClick={(e)=>{e.preventDefault(); /* onNav('blogs') */}}>View all articles</a>
-          </div>
-          <div className="tile-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-            {data.blogs.map((blog, i) => (
-              <a
-                key={blog.id}
-                href={`#/blog/${blog.slug}`}
-                onClick={(e)=>{e.preventDefault(); /* onNav('blog', null, null, blog.slug) */}}
-                className="fade-in"
+
+            <div style={{ display: 'grid', gridTemplateColumns: rest.length > 0 ? '1fr 1fr' : '1fr', gap: 32 }}>
+              {/* Featured large post */}
+              <button
+                onClick={() => onNav('blog-post', null, null, featured.slug)}
                 style={{
-                  display: 'block',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  animationDelay: `${i * 60}ms`
+                  background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                  textAlign: 'left', display: 'flex', flexDirection: 'column',
+                  gridRow: rest.length > 1 ? 'span 2' : 'auto',
                 }}
               >
-                <div style={{ position: 'relative', width: '100%', height: 280, marginBottom: 16, overflow: 'hidden', borderRadius: 8 }}>
-                  {blog.image && (
+                <div style={{
+                  position: 'relative', width: '100%',
+                  height: rest.length > 1 ? '100%' : 420,
+                  minHeight: 360, overflow: 'hidden', borderRadius: 12,
+                  background: 'var(--linen)',
+                }}>
+                  {featured.image ? (
                     <img
-                      src={blog.image}
-                      alt={blog.title}
+                      src={featured.image}
+                      alt={featured.title}
                       loading="lazy"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 600ms ease' }}
+                      style={{
+                        position: 'absolute', inset: 0, width: '100%', height: '100%',
+                        objectFit: 'cover', transition: 'transform 700ms ease',
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                      onError={e => { e.currentTarget.style.display = 'none'; }}
                     />
+                  ) : (
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--linen) 0%, var(--gold-soft) 100%)', opacity: 0.3 }} />
                   )}
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.1) 55%, transparent 100%)',
+                  }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '32px 28px', color: '#fff' }}>
+                    <div style={{
+                      display: 'inline-block', fontFamily: 'var(--font-mono)', fontSize: 10,
+                      textTransform: 'uppercase', letterSpacing: '0.18em',
+                      color: 'var(--gold-soft)', marginBottom: 12,
+                    }}>
+                      {featured.author || 'Editorial Team'}
+                      {featured.published_at && <span style={{ color: 'rgba(255,255,255,0.5)', marginLeft: 8 }}>
+                        · {new Date(featured.published_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>}
+                    </div>
+                    <h3 style={{
+                      fontFamily: 'var(--font-display)', fontSize: 'clamp(22px, 3vw, 32px)',
+                      lineHeight: 1.15, marginBottom: 12,
+                    }}>{featured.title}</h3>
+                    <p style={{ fontSize: 14, opacity: 0.85, lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: 20 }}>
+                      {featured.content?.replace(/<[^>]+>/g, '')}
+                    </p>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      color: 'var(--gold-soft)',
+                    }}>
+                      Read Article →
+                    </span>
+                  </div>
                 </div>
-                <div className="eyebrow" style={{ marginBottom: 8 }}>{blog.author}</div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 24, marginBottom: 8 }}>{blog.title}</h3>
-                <p style={{ fontSize: 15, color: 'var(--ink-soft)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                  {blog.content}
-                </p>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
+              </button>
+
+              {/* Smaller post cards */}
+              {rest.map((blog, i) => (
+                <button
+                  key={blog.id}
+                  onClick={() => onNav('blog-post', null, null, blog.slug)}
+                  className="fade-in"
+                  style={{
+                    background: 'none', border: '1px solid var(--line)', borderRadius: 12, padding: 0,
+                    cursor: 'pointer', textAlign: 'left', display: 'flex', flexDirection: 'row',
+                    overflow: 'hidden', animationDelay: `${i * 80}ms`, transition: 'box-shadow 300ms ease, transform 300ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                >
+                  <div style={{
+                    width: 160, minWidth: 160, height: 160, overflow: 'hidden',
+                    background: 'var(--linen)', position: 'relative', flexShrink: 0,
+                  }}>
+                    {blog.image ? (
+                      <img
+                        src={blog.image}
+                        alt={blog.title}
+                        loading="lazy"
+                        style={{
+                          position: 'absolute', inset: 0, width: '100%', height: '100%',
+                          objectFit: 'cover', transition: 'transform 600ms ease',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                        onError={e => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, var(--linen), var(--gold-soft))', opacity: 0.4 }} />
+                    )}
+                  </div>
+                  <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, flex: 1 }}>
+                    <div style={{
+                      fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase',
+                      letterSpacing: '0.15em', color: 'var(--gold-deep)',
+                    }}>
+                      {blog.author || 'Editorial Team'}
+                    </div>
+                    <h4 style={{
+                      fontFamily: 'var(--font-display)', fontSize: 18, lineHeight: 1.25,
+                      color: 'var(--ink)', margin: 0,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>{blog.title}</h4>
+                    <p style={{
+                      fontSize: 13, color: 'var(--ink-soft)', lineHeight: 1.55, margin: 0,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {blog.content?.replace(/<[^>]+>/g, '')}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
 
       <hr className="divider-rule" />
 

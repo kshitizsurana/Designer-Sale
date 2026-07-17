@@ -725,13 +725,16 @@ app.get('/api/blogs', async (req, res) => {
 });
 
 app.post('/api/blogs', authenticateToken, async (req, res) => {
-    const { title, slug, content, image, author, status, published_at } = req.body;
+    let { title, slug, content, image, author, status, published_at } = req.body;
+    if (!slug && title) {
+        slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
     const newId = 'b_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     const { error } = await supabase.from('blogs').insert([{
         id: newId, title, slug, content, image, author, status: status || 'draft', published_at
     }]);
     if (error) return res.status(500).json({ error: error.message });
-    res.json({ id: newId, ...req.body });
+    res.json({ id: newId, ...req.body, slug });
 });
 
 app.put('/api/blogs/:id', authenticateToken, async (req, res) => {
