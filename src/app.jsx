@@ -29,16 +29,17 @@ function App() {
         try {
           bootstrap = await API.bootstrap.get();
         } catch (bootstrapError) {
-          const [categories, merchants, brands, products, looks, collections, landing_pages] = await Promise.all([
+          const [categories, merchants, brands, products, looks, collections, landing_pages, blogs] = await Promise.all([
             API.categories.getAll(),
             API.merchants.getAll(),
             API.brands.getAll(),
             API.products.getAll(),
             API.looks.getAll(),
             API.collections.getAll().catch(() => []),
-            API.landingPages.getAll().catch(() => [])
+            API.landingPages.getAll().catch(() => []),
+            API.blogs.getAll().catch(() => [])
           ]);
-          bootstrap = { categories, merchants, brands, products, looks, collections, landing_pages };
+          bootstrap = { categories, merchants, brands, products, looks, collections, landing_pages, blogs };
         }
 
         const categories = (Array.isArray(bootstrap.categories) ? bootstrap.categories : []).filter(c => (c.status || 'active') === 'active');
@@ -101,10 +102,13 @@ function App() {
           };
         });
 
+        const blogs = (Array.isArray(bootstrap.blogs) ? bootstrap.blogs : []).filter(b => b.status === 'published');
+
         setData({
           categories: enrichedCategories,
           merchants: enrichedMerchants,
           brands,
+          blogs,
           looks: looks || [],
           collections: collections || [],
           landing_pages: landing_pages || [],
