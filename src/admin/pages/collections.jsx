@@ -314,10 +314,10 @@ function AdminCollections({ toast }) {
                 <td>
                   <span style={{ 
                     padding: '2px 6px', borderRadius: 4, fontSize: 10, textTransform: 'uppercase', 
-                    background: c.status === 'published' ? '#d4edda' : '#f8d7da',
-                    color: c.status === 'published' ? '#155724' : '#721c24'
+                    background: (c.status === 'published' || c.status === 'active') ? '#d4edda' : '#f8d7da',
+                    color: (c.status === 'published' || c.status === 'active') ? '#155724' : '#721c24'
                   }}>
-                    {c.status}
+                    {(c.status === 'published' || c.status === 'active') ? 'Published' : c.status}
                   </span>
                 </td>
                 <td>

@@ -63,10 +63,10 @@ function MerchantPage({ merchantId, data, cardVariant, wishlist, onToggleWishlis
   const filtered = useMemeMerch(() => {
     let out = rawProducts.slice();
     if (selectedCat !== 'all')    out = out.filter(p => p.category === selectedCat);
-    if (minDiscount > 0)          out = out.filter(p => p.discountPct >= minDiscount);
-    if (selectedSizes.size)       out = out.filter(p => p.sizes?.some(s => selectedSizes.has(s)));
+    if (minDiscount > 0)          out = out.filter(p => (p.discountPct || 0) >= minDiscount);
+    if (selectedSizes.size)       out = out.filter(p => (p.sizes || []).some(s => selectedSizes.has(s)));
     if (selectedBrands.size)      out = out.filter(p => selectedBrands.has(p.brand));
-    out = out.filter(p => p.sale <= priceMax);
+    if (priceMax < 5000)          out = out.filter(p => p.sale <= priceMax);
 
     if (sort === 'price-low')      out.sort((a, b) => a.sale - b.sale);
     else if (sort === 'price-high') out.sort((a, b) => b.sale - a.sale);

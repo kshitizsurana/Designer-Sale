@@ -13,7 +13,7 @@ function CategoryPage({ data, categoryId, cardVariant, wishlist, onToggleWishlis
   const [selectedSizes, setSelectedSizes] = useStateCat(new Set());
   const [selectedBrands, setSelectedBrands] = useStateCat(new Set());
   const [newInOnly, setNewInOnly]       = useStateCat(false);
-  const [priceMax, setPriceMax]         = useStateCat(800);     // cap
+  const [priceMax, setPriceMax]         = useStateCat(5000);     // cap
   const [sort, setSort]                 = useStateCat('latest');
   const [collapsed, setCollapsed]       = useStateCat(new Set());
   const [visibleCount, setVisibleCount] = useStateCat(12);
@@ -31,7 +31,7 @@ function CategoryPage({ data, categoryId, cardVariant, wishlist, onToggleWishlis
     if (newInOnly)       out = out.filter(p => p.newIn);
     if (selectedSizes.size) out = out.filter(p => p.sizes.some(s => selectedSizes.has(s)));
     if (selectedBrands.size) out = out.filter(p => selectedBrands.has(p.brand));
-    out = out.filter(p => p.sale <= priceMax);
+    if (priceMax < 5000) out = out.filter(p => p.sale <= priceMax);
 
     if (sort === 'price-low') out.sort((a,b) => a.sale - b.sale);
     else if (sort === 'price-high') out.sort((a,b) => b.sale - a.sale);

@@ -48,23 +48,30 @@ function App() {
         const looks = (Array.isArray(bootstrap.looks) ? bootstrap.looks : [])
           .filter(l => (l.status || 'active') === 'active')
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.id - b.id);
-        const collections = (Array.isArray(bootstrap.collections) ? bootstrap.collections : []).filter(c => (c.status || 'active') !== 'archived' && c.status !== 'hidden');
+        const collections = (Array.isArray(bootstrap.collections) ? bootstrap.collections : []).filter(c => {
+          const st = (c.status || 'active').toLowerCase();
+          return st !== 'archived' && st !== 'hidden' && st !== 'draft';
+        });
 
         const categoryExtras = {
-          'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'], image: window.IMG?.catMaxi },
-          'kaftans':      { swatch: ['#E8D9C4', '#7A6450'], image: window.IMG?.catKaftan },
-          'tops-blouses': { swatch: ['#D8C8B8', '#8E7558'], image: window.IMG?.catTops },
-          'coats-jackets':    { swatch: ['#6B5B4A', '#2A2520'], image: window.IMG?.catCoats },
-          'bags-accessories': { swatch: ['#A8854A', '#5C4632'], image: window.IMG?.catBags },
-          'jewellery':        { swatch: ['#C9A84C', '#E8D4B8'], image: window.IMG?.catJewel },
+          'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'], image: window.IMG?.catMaxi || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=900&q=85&auto=format&fit=crop' },
+          'kaftans':      { swatch: ['#E8D9C4', '#7A6450'], image: window.IMG?.catKaftan || 'https://images.unsplash.com/photo-1485518882345-15568b007407?w=900&q=85&auto=format&fit=crop' },
+          'tops-blouses': { swatch: ['#D8C8B8', '#8E7558'], image: window.IMG?.catTops || 'https://images.unsplash.com/photo-1564257631407-4deb1f99d992?w=900&q=85&auto=format&fit=crop' },
+          'coats-jackets':    { swatch: ['#6B5B4A', '#2A2520'], image: window.IMG?.catCoats || 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=900&q=85&auto=format&fit=crop' },
+          'bags-accessories': { swatch: ['#A8854A', '#5C4632'], image: window.IMG?.catBags || 'https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=900&q=85&auto=format&fit=crop' },
+          'jewellery':        { swatch: ['#C9A84C', '#E8D4B8'], image: window.IMG?.catJewel || 'https://images.unsplash.com/photo-1611652022419-a9419f74343d?w=900&q=85&auto=format&fit=crop' },
+          'bottoms':          { swatch: ['#4A5568', '#2D3748'], image: 'https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=900&q=85&auto=format&fit=crop' },
+          'dresses':          { swatch: ['#9B2C2C', '#742A2A'], image: 'https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=900&q=85&auto=format&fit=crop' },
+          'shoes':            { swatch: ['#2B6CB0', '#2C5282'], image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=900&q=85&auto=format&fit=crop' },
+          'jumpsuits':        { swatch: ['#2F855A', '#22543D'], image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=85&auto=format&fit=crop' }
         };
 
         const enrichedCategories = categories.map(c => {
           const dbSwatch = Array.isArray(c.swatch) ? c.swatch : safeJsonArray(c.swatch);
-          const ext = categoryExtras[c.id] || { swatch: ['#ccc', '#aaa'] };
+          const ext = categoryExtras[c.id] || { swatch: ['#ccc', '#aaa'], image: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=900&q=85&auto=format&fit=crop' };
           return {
             ...c,
-            image: c.image || ext.image || '',
+            image: c.image || ext.image,
             swatch: dbSwatch || ext.swatch,
             count: products.filter(p => p.category === c.id).length,
           };
@@ -137,37 +144,43 @@ function App() {
     root.style.setProperty('--density', String(d));
   }, [tweaks.accent, tweaks.density]);
 
-  // ---- Routing (hash-based) ----
-  const [route, setRoute] = useState(() => parseHash());
+  // ---- Routing (Clean Path + Hash Fallback) ----
+  const [route, setRoute] = useState(() => parseRoute());
   useEffect(() => {
-    const onHash = () => setRoute(parseHash());
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    const onChange = () => setRoute(parseRoute());
+    window.addEventListener('hashchange', onChange);
+    window.addEventListener('popstate', onChange);
+    return () => {
+      window.removeEventListener('hashchange', onChange);
+      window.removeEventListener('popstate', onChange);
+    };
   }, []);
 
   function navigate(page, categoryId = null, action = null, entityId = null) {
-    let hash = '#/';
-    if      (page === 'category')     hash = `#/c/${categoryId || 'maxi-dresses'}`;
-    else if (page === 'boutiques')    hash = '#/boutiques';
-    else if (page === 'about')        hash = '#/about';
-    else if (page === 'wishlist')     hash = '#/wishlist';
-    else if (page === 'blog')         hash = '#/blog';
-    else if (page === 'blog-post')    hash = `#/blog/${entityId}`;
-    else if (page === 'product')      hash = `#/product/${entityId}`;
-    else if (page === 'brand')        hash = `#/brand/${entityId}`;
-    else if (page === 'merchant')     hash = `#/merchant/${entityId}`;
-    else if (page === 'look-all')     hash = `#/look/${entityId}/all`;
-    else if (page === 'look')         hash = `#/look/${entityId}`;
+    let path = '/';
+    if      (page === 'category')     path = `/c/${categoryId || 'maxi-dresses'}`;
+    else if (page === 'boutiques')    path = '/boutiques';
+    else if (page === 'about')        path = '/about';
+    else if (page === 'wishlist')     path = '/wishlist';
+    else if (page === 'blog')         path = '/blog';
+    else if (page === 'blog-post')    path = `/blog/${entityId}`;
+    else if (page === 'product')      path = `/product/${entityId}`;
+    else if (page === 'brand')        path = `/brand/${entityId}`;
+    else if (page === 'merchant')     path = `/merchant/${entityId}`;
+    else if (page === 'look-all')     path = `/look/${entityId}/all`;
+    else if (page === 'look')         path = `/look/${entityId}`;
     else if (page === 'collection')   {
       if (categoryId && categoryId !== 'null' && categoryId !== 'all') {
-        hash = `#/collection/${categoryId}/${entityId}`;
+        path = `/collection/${categoryId}/${entityId}`;
       } else {
-        hash = `#/collection/${entityId}`;
+        path = `/collection/${entityId}`;
       }
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
-    if (window.location.hash !== hash) window.location.hash = hash;
-    else setRoute(parseHash());
+    try {
+      window.history.pushState({}, '', path);
+    } catch(e) {}
+    setRoute(parseRoute());
     if (action === 'email') {
       setTimeout(() => { if (window.dsScrollEmail) window.dsScrollEmail(); }, 100);
     }
@@ -353,29 +366,39 @@ function LogoStyleInjector({ variant }) {
   return null;
 }
 
-// ---- Hash parser ----
-function parseHash() {
-  const hash = window.location.hash || '#/';
-  if (hash === '' || hash === '#/') return { page: 'home' };
-  if (hash === '#/wishlist') return { page: 'wishlist' };
-  if (hash === '#/boutiques') return { page: 'boutiques' };
-  if (hash === '#/about') return { page: 'about' };
-  if (hash === '#/blog') return { page: 'blog' };
-  if (hash.startsWith('#/blog/')) return { page: 'blog-post', entityId: hash.split('/')[2] };
-  if (hash.startsWith('#/product/')) return { page: 'product', entityId: hash.split('/')[2] };
-  if (hash.startsWith('#/brand/')) return { page: 'brand', entityId: hash.split('/')[2] };
-  if (hash.startsWith('#/merchant/')) return { page: 'merchant', entityId: hash.split('/')[2] };
-  if (hash.startsWith('#/landing-page/')) return { page: 'collection', categoryId: null, entityId: hash.split('/')[2] };
-  if (hash.startsWith('#/look/')) {
-    const parts = hash.split('/');
+// ---- Router (Supports clean paths and hash fallback) ----
+function parseRoute() {
+  const pathname = window.location.pathname || '/';
+  const hash = (window.location.hash || '').replace(/^#/, '');
+
+  let raw = pathname !== '/' && !pathname.includes('.html') && !pathname.includes('admin') ? pathname : (hash || '/');
+  if (!raw.startsWith('/')) raw = '/' + raw;
+  
+  // Clean trailing slash
+  if (raw.length > 1 && raw.endsWith('/')) raw = raw.slice(0, -1);
+
+  if (raw === '/' || raw === '') return { page: 'home' };
+  if (raw === '/wishlist') return { page: 'wishlist' };
+  if (raw === '/boutiques') return { page: 'boutiques' };
+  if (raw === '/about') return { page: 'about' };
+  if (raw === '/blog') return { page: 'blog' };
+  if (raw.startsWith('/blog/')) return { page: 'blog-post', entityId: raw.split('/')[2] };
+  if (raw.startsWith('/product/')) return { page: 'product', entityId: raw.split('/')[2] };
+  if (raw.startsWith('/brand/')) return { page: 'brand', entityId: raw.split('/')[2] };
+  if (raw.startsWith('/merchant/')) return { page: 'merchant', entityId: raw.split('/')[2] };
+  if (raw.startsWith('/landing-page/')) return { page: 'collection', categoryId: null, entityId: raw.split('/')[2] };
+  if (raw.startsWith('/look/')) {
+    const parts = raw.split('/');
     if (parts[3] === 'all') return { page: 'look-all', entityId: parts[2] };
     return { page: 'look', entityId: parts[2] };
   }
-  if (hash.startsWith('#/c/')) return { page: 'category', categoryId: hash.split('/')[2] };
-  if (hash.startsWith('#/collection/')) {
-    const parts = hash.split('/').filter(Boolean);
+  if (raw.startsWith('/c/')) return { page: 'category', categoryId: raw.split('/')[2] };
+  if (raw.startsWith('/collection/')) {
+    const parts = raw.split('/').filter(Boolean);
+    // parts[0] = 'collection'
     if (parts.length >= 3) {
-      return { page: 'collection', categoryId: parts[2] === 'null' || parts[2] === 'all' ? null : parts[2], entityId: parts[3] };
+      const cat = (parts[1] === 'null' || parts[1] === 'all') ? null : parts[1];
+      return { page: 'collection', categoryId: cat, entityId: parts[2] };
     }
     if (parts.length === 2) {
       return { page: 'collection', categoryId: null, entityId: parts[1] };

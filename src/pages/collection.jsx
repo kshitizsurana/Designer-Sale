@@ -15,7 +15,7 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
   const [selectedSizes, setSelectedSizes] = useColState(new Set());
   const [selectedBrands, setSelectedBrands] = useColState(new Set());
   const [newInOnly, setNewInOnly]         = useColState(false);
-  const [priceMax, setPriceMax]           = useColState(1000);
+  const [priceMax, setPriceMax]           = useColState(10000);
   const [sort, setSort]                   = useColState('curated');
   const [collapsed, setCollapsed]         = useColState(new Set());
   const [visibleCount, setVisibleCount]   = useColState(12);
@@ -26,7 +26,7 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
     setSelectedSizes(new Set());
     setSelectedBrands(new Set());
     setNewInOnly(false);
-    setPriceMax(1000);
+    setPriceMax(10000);
     setSort('curated');
     setVisibleCount(12);
   }, [collectionSlug]);
@@ -79,7 +79,7 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
     if (newInOnly)       out = out.filter(p => p.newIn);
     if (selectedSizes.size) out = out.filter(p => (p.sizes || []).some(s => selectedSizes.has(s)));
     if (selectedBrands.size) out = out.filter(p => selectedBrands.has(p.brand));
-    out = out.filter(p => (p.sale || 0) <= priceMax);
+    if (priceMax < 10000) out = out.filter(p => (p.sale || 0) <= priceMax);
 
     if (sort === 'price-low')  out.sort((a, b) => (a.sale || 0) - (b.sale || 0));
     else if (sort === 'price-high') out.sort((a, b) => (b.sale || 0) - (a.sale || 0));
@@ -94,7 +94,7 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
   if (minDiscount > 0) activeChips.push({ label: `${minDiscount}%+ Off`, clear: () => setMinDiscount(0) });
   selectedSizes.forEach(s => activeChips.push({ label: `Size ${s}`, clear: () => toggleSet(selectedSizes, s, setSelectedSizes) }));
   selectedBrands.forEach(b => activeChips.push({ label: b, clear: () => toggleSet(selectedBrands, b, setSelectedBrands) }));
-  if (priceMax < 1000) activeChips.push({ label: `Under $${priceMax}`, clear: () => setPriceMax(1000) });
+  if (priceMax < 10000) activeChips.push({ label: `Under $${priceMax}`, clear: () => setPriceMax(10000) });
 
   function toggleCollapsed(name) {
     const next = new Set(collapsed);
@@ -108,7 +108,7 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
     setSelectedSizes(new Set());
     setSelectedBrands(new Set());
     setNewInOnly(false);
-    setPriceMax(1000);
+    setPriceMax(10000);
   }
 
   const allSizes = ['XS', 'S', 'M', 'L', 'XL'];
@@ -256,13 +256,13 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
               <div className={`filter-body ${!isOpen('price') ? 'collapsed' : ''}`}>
                 <div className="price-slider">
                   <input
-                    type="range" min={50} max={1000} step={25} value={priceMax}
+                    type="range" min={50} max={5000} step={50} value={priceMax}
                     onChange={e => setPriceMax(parseInt(e.target.value, 10))}
                     style={{ width: '100%', accentColor: 'var(--ink)' }}
                   />
                   <div className="price-vals">
                     <span>$50</span>
-                    <span style={{ color: 'var(--ink)' }}>up to ${priceMax}{priceMax === 1000 ? '+' : ''}</span>
+                    <span style={{ color: 'var(--ink)' }}>{priceMax >= 5000 ? 'All Prices' : `up to $${priceMax}`}</span>
                   </div>
                 </div>
               </div>
