@@ -64,10 +64,11 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
   const allLookProducts = data.products.filter(p => p.look_id === look.id || (data.merchants.find(m => m.id === p.merchantId)?.look_id === look.id));
   const lookMerchants = data.merchants.filter(m => m.look_id === look.id);
 
-  // Curated Sales for this look (Landing pages + Collections)
-  const lookLandingPages = (data.landing_pages || []).filter(lp => lp.look_id === look.id && lp.status !== 'archived').map(lp => ({ ...lp, type: 'landing-page', sort: lp.sort_order || 0 }));
-  const lookCollections = (data.collections || []).filter(c => c.look_id === look.id && c.status !== 'archived').map(c => ({ ...c, type: 'collection', image: c.hero_image, short_description: c.description, sort: c.display_order || 0 }));
-  const curatedSales = [...lookLandingPages, ...lookCollections].sort((a, b) => a.sort - b.sort);
+  // Curated Sales for this look (Collections)
+  const curatedSales = (data.collections || [])
+    .filter(c => c.look_id === look.id && c.status !== 'archived' && c.status !== 'hidden')
+    .map(c => ({ ...c, type: 'collection', image: c.hero_image, short_description: c.description, sort: c.display_order || 0 }))
+    .sort((a, b) => a.sort - b.sort);
 
   const keywords = Array.isArray(look.keywords) ? look.keywords.filter(Boolean) : [];
   const featureTitle = look.feature_title || look.name;
@@ -206,8 +207,7 @@ function LookPage({ lookSlug, data, cardVariant, wishlist, onToggleWishlist, onS
                     background: palette.hero,
                   }}
                   onClick={() => {
-                    if (item.type === 'collection') onNav('collection', null, null, item.slug || item.id);
-                    else onNav('landing-page', null, null, item.id);
+                    onNav('collection', null, null, item.slug || item.id);
                   }}
                 >
                   {item.image && (

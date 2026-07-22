@@ -18,7 +18,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
   const avgDiscount = data.products && data.products.length > 0 
     ? Math.round(data.products.reduce((acc, p) => acc + (p.discountPct || 0), 0) / data.products.length) 
     : 0;
-  const featuredPage = (data.landing_pages || [])[0] || null;
+  const featuredPage = (data.collections || [])[0] || null;
   const topCategories = (data.categories || [])
     .slice()
     .sort((a, b) => (b.count || 0) - (a.count || 0))
@@ -49,7 +49,7 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 8 }}>
               <button
                 className="btn btn-gold"
-                onClick={() => featuredPage ? onNav('landing-page', null, null, featuredPage.id) : onNav('category', topCategories[0]?.id || data.categories[0]?.id)}
+                onClick={() => featuredPage ? onNav('collection', null, null, featuredPage.slug || featuredPage.id) : onNav('category', topCategories[0]?.id || data.categories[0]?.id)}
               >
                 SHOP THE MAY EDIT <Icon.ArrowRight />
               </button>

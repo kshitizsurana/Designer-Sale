@@ -29,17 +29,16 @@ function App() {
         try {
           bootstrap = await API.bootstrap.get();
         } catch (bootstrapError) {
-          const [categories, merchants, brands, products, looks, collections, landing_pages, blogs] = await Promise.all([
+          const [categories, merchants, brands, products, looks, collections, blogs] = await Promise.all([
             API.categories.getAll(),
             API.merchants.getAll(),
             API.brands.getAll(),
             API.products.getAll(),
             API.looks.getAll(),
             API.collections.getAll().catch(() => []),
-            API.landingPages.getAll().catch(() => []),
             API.blogs.getAll().catch(() => [])
           ]);
-          bootstrap = { categories, merchants, brands, products, looks, collections, landing_pages, blogs };
+          bootstrap = { categories, merchants, brands, products, looks, collections, blogs };
         }
 
         const categories = (Array.isArray(bootstrap.categories) ? bootstrap.categories : []).filter(c => (c.status || 'active') === 'active');
@@ -50,7 +49,6 @@ function App() {
           .filter(l => (l.status || 'active') === 'active')
           .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.id - b.id);
         const collections = (Array.isArray(bootstrap.collections) ? bootstrap.collections : []).filter(c => (c.status || 'active') !== 'archived' && c.status !== 'hidden');
-        const landing_pages = (Array.isArray(bootstrap.landing_pages) ? bootstrap.landing_pages : []).filter(lp => (lp.status || 'published') !== 'archived');
 
         const categoryExtras = {
           'maxi-dresses': { swatch: ['#C9B8A8', '#A8854A'], image: window.IMG?.catMaxi },
@@ -111,7 +109,6 @@ function App() {
           blogs,
           looks: looks || [],
           collections: collections || [],
-          landing_pages: landing_pages || [],
           products: enrichedProducts,
           justAdded: enrichedProducts
             .slice()
@@ -161,7 +158,7 @@ function App() {
     else if (page === 'merchant')     hash = `#/merchant/${entityId}`;
     else if (page === 'look-all')     hash = `#/look/${entityId}/all`;
     else if (page === 'look')         hash = `#/look/${entityId}`;
-    else if (page === 'landing-page') hash = `#/landing-page/${entityId}`;
+    else if (page === 'landing-page') hash = `#/collection/all/${entityId}`;
     else if (page === 'collection')   hash = `#/collection/${categoryId}/${entityId}`;
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (window.location.hash !== hash) window.location.hash = hash;
@@ -261,7 +258,6 @@ function App() {
       {route.page === 'merchant'  && <MerchantPage {...commonProps} merchantId={route.entityId} />}
       {route.page === 'look'      && <LookPage {...commonProps} lookSlug={route.entityId} />}
       {route.page === 'look-all'  && <LookAllPage {...commonProps} lookSlug={route.entityId} />}
-      {route.page === 'landing-page' && <LandingPage {...commonProps} landingPageId={route.entityId} />}
       {route.page === 'collection' && <CollectionPage {...commonProps} collectionSlug={route.entityId} lookSlug={route.categoryId} />}
       {route.page === 'blog'      && <BlogList onNav={navigate} />}
       {route.page === 'blog-post' && <BlogPost slug={route.entityId} onNav={navigate} />}
@@ -364,7 +360,7 @@ function parseHash() {
   if (hash.startsWith('#/product/')) return { page: 'product', entityId: hash.split('/')[2] };
   if (hash.startsWith('#/brand/')) return { page: 'brand', entityId: hash.split('/')[2] };
   if (hash.startsWith('#/merchant/')) return { page: 'merchant', entityId: hash.split('/')[2] };
-  if (hash.startsWith('#/landing-page/')) return { page: 'landing-page', entityId: hash.split('/')[2] };
+  if (hash.startsWith('#/landing-page/')) return { page: 'collection', categoryId: null, entityId: hash.split('/')[2] };
   if (hash.startsWith('#/look/')) {
     const parts = hash.split('/');
     if (parts[3] === 'all') return { page: 'look-all', entityId: parts[2] };
