@@ -158,8 +158,13 @@ function App() {
     else if (page === 'merchant')     hash = `#/merchant/${entityId}`;
     else if (page === 'look-all')     hash = `#/look/${entityId}/all`;
     else if (page === 'look')         hash = `#/look/${entityId}`;
-    else if (page === 'landing-page') hash = `#/collection/all/${entityId}`;
-    else if (page === 'collection')   hash = `#/collection/${categoryId}/${entityId}`;
+    else if (page === 'collection')   {
+      if (categoryId && categoryId !== 'null' && categoryId !== 'all') {
+        hash = `#/collection/${categoryId}/${entityId}`;
+      } else {
+        hash = `#/collection/${entityId}`;
+      }
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
     if (window.location.hash !== hash) window.location.hash = hash;
     else setRoute(parseHash());
@@ -368,8 +373,13 @@ function parseHash() {
   }
   if (hash.startsWith('#/c/')) return { page: 'category', categoryId: hash.split('/')[2] };
   if (hash.startsWith('#/collection/')) {
-    const parts = hash.split('/');
-    return { page: 'collection', categoryId: parts[2] || null, entityId: parts[3] || null };
+    const parts = hash.split('/').filter(Boolean);
+    if (parts.length >= 3) {
+      return { page: 'collection', categoryId: parts[2] === 'null' || parts[2] === 'all' ? null : parts[2], entityId: parts[3] };
+    }
+    if (parts.length === 2) {
+      return { page: 'collection', categoryId: null, entityId: parts[1] };
+    }
   }
   return { page: 'home', categoryId: null, entityId: null };
 }

@@ -38,12 +38,24 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
   };
 
   const collection = useColMemo(() => {
-    return collections.find(c => c.slug === collectionSlug) || null;
-  }, [collections, collectionSlug]);
+    if (!collections || collections.length === 0) return null;
+    const target = collectionSlug || lookSlug;
+    if (!target) return collections[0] || null;
+    return collections.find(c => c.slug === target || String(c.id) === String(target)) ||
+           collections.find(c => (c.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-') === target) || null;
+  }, [collections, collectionSlug, lookSlug]);
 
   const look = useColMemo(() => {
-    return looks.find(l => l.slug === lookSlug) || null;
-  }, [looks, lookSlug]);
+    if (lookSlug && lookSlug !== 'all' && lookSlug !== 'null') {
+      const found = looks.find(l => l.slug === lookSlug);
+      if (found) return found;
+    }
+    if (collection && collection.look_id) {
+      const found = looks.find(l => l.id === collection.look_id);
+      if (found) return found;
+    }
+    return looks[0] || { name: 'Style', slug: 'all' };
+  }, [looks, lookSlug, collection]);
 
   // Resolve base products for this collection in curated order
   const baseProducts = useColMemo(() => {
@@ -113,7 +125,7 @@ function CollectionPage({ data, collectionSlug, lookSlug, cardVariant, wishlist,
     'casuals':     { accent: '#7EB8D4' },
   };
 
-  if (!collection || !look) {
+  if (!collection) {
     return (
       <div style={{ padding: '120px 20px', textAlign: 'center' }}>
         <div className="eyebrow" style={{ marginBottom: 12 }}>Not Found</div>
