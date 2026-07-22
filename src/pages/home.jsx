@@ -49,7 +49,14 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
             <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginTop: 8 }}>
               <button
                 className="btn btn-gold"
-                onClick={() => featuredPage ? onNav('collection', null, null, featuredPage.slug || featuredPage.id) : onNav('category', topCategories[0]?.id || data.categories[0]?.id)}
+                onClick={() => {
+                  if (featuredPage) {
+                    const look = data.looks.find(l => l.id === featuredPage.look_id);
+                    onNav('collection', look ? look.slug : 'all', null, featuredPage.slug || featuredPage.id);
+                  } else {
+                    onNav('category', topCategories[0]?.id || data.categories[0]?.id);
+                  }
+                }}
               >
                 SHOP THE MAY EDIT <Icon.ArrowRight />
               </button>
@@ -198,17 +205,20 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
 
       <hr className="divider-rule" />
 
-      {/* ---- Featured Sales (Landing Pages) ---- */}
-      {data.landing_pages && data.landing_pages.filter(lp => lp.status !== 'archived').length > 0 && (
+      {/* ---- Featured Sales (Collections) ---- */}
+      {data.collections && data.collections.filter(c => c.status !== 'archived' && c.status !== 'hidden').length > 0 && (
         <section className="section container-wide">
           <div className="section-head" style={{ textAlign: 'center', display: 'block', marginBottom: 40 }}>
             <div className="eyebrow" style={{ marginBottom: 10 }}>Curated Sales</div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)' }}>Shop Featured Sales.</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {data.landing_pages.filter(lp => lp.status !== 'archived').map((lp, i) => (
+            {data.collections.filter(c => c.status !== 'archived' && c.status !== 'hidden').map((c, i) => {
+              const look = data.looks.find(l => l.id === c.look_id);
+              const lookSlug = look ? look.slug : 'all';
+              return (
               <button
-                key={lp.id}
+                key={c.id}
                 className="fade-in"
                 style={{
                   position: 'relative',
@@ -222,12 +232,12 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                   alignItems: 'flex-end',
                   textAlign: 'left'
                 }}
-                onClick={() => onNav('landing-page', null, null, lp.id)}
+                onClick={() => onNav('collection', lookSlug, null, c.slug || c.id)}
               >
-                {lp.image && (
+                {c.hero_image && (
                   <img
-                    src={lp.image}
-                    alt={lp.title}
+                    src={c.hero_image}
+                    alt={c.title}
                     loading="lazy"
                     style={{
                       position: 'absolute',
@@ -242,14 +252,14 @@ function HomePage({ data, cardVariant, wishlist, onToggleWishlist, onShop, onNav
                 )}
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)' }} />
                 <div style={{ position: 'relative', zIndex: 1, padding: '40px', color: '#fff' }}>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 12 }}>{lp.title}</h3>
-                  <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 20, maxWidth: 600 }}>{lp.short_description}</p>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 3vw, 42px)', marginBottom: 12 }}>{c.title}</h3>
+                  <p style={{ fontSize: 16, opacity: 0.9, marginBottom: 20, maxWidth: 600 }}>{c.description}</p>
                   <span className="btn btn-ghost" style={{ border: '1px solid rgba(255,255,255,0.4)', color: '#fff', backdropFilter: 'blur(4px)' }}>
                     Shop Sale <Icon.ArrowRight style={{ marginLeft: 8 }} />
                   </span>
                 </div>
               </button>
-            ))}
+            )})}
           </div>
         </section>
       )}

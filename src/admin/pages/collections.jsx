@@ -1,7 +1,7 @@
 /* global React, API, AIcon */
 // AdminPanel — Collections Management
 
-const { useState: useCollectionsState, useEffect: useCollectionsEffect } = React;
+const { useState: useCollectionsState, useEffect: useCollectionsEffect, useMemo: useCollectionsMemo } = React;
 
 function AdminCollections({ toast }) {
   const [collections, setCollections] = useCollectionsState([]);
@@ -13,6 +13,23 @@ function AdminCollections({ toast }) {
   const [editing, setEditing] = useCollectionsState(null);
   const [isProductsModalOpen, setIsProductsModalOpen] = useCollectionsState(false);
   const [selectedProductIds, setSelectedProductIds] = useCollectionsState([]);
+  const [searchTerm, setSearchTerm] = useCollectionsState('');
+
+  const filteredProducts = useCollectionsMemo(() => {
+    if (!searchTerm) return products;
+    const term = searchTerm.toLowerCase();
+    return products.filter(p => 
+      (p.title || '').toLowerCase().includes(term) || 
+      (p.brand || '').toLowerCase().includes(term) ||
+      (p.category || '').toLowerCase().includes(term)
+    );
+  }, [products, searchTerm]);
+
+  // Derived arrays for selected vs unselected
+  const selectedProducts = useCollectionsMemo(() => {
+    const map = new Map(products.map(p => [p.id, p]));
+    return selectedProductIds.map(id => map.get(id)).filter(Boolean);
+  }, [products, selectedProductIds]);
 
   useCollectionsEffect(() => {
     loadData();
@@ -81,10 +98,20 @@ function AdminCollections({ toast }) {
     setIsProductsModalOpen(true);
   }
 
-  function toggleProductSelection(id) {
+  function addProduct(id) {
+    if (!selectedProductIds.includes(id)) setSelectedProductIds(prev => [...prev, id]);
+  }
+  function removeProduct(id) {
+    setSelectedProductIds(prev => prev.filter(pid => pid !== id));
+  }
+  function moveProduct(index, dir) {
     setSelectedProductIds(prev => {
-      if (prev.includes(id)) return prev.filter(pid => pid !== id);
-      return [...prev, id];
+      if (index + dir < 0 || index + dir >= prev.length) return prev;
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[index + dir];
+      next[index + dir] = temp;
+      return next;
     });
   }
 
@@ -163,44 +190,101 @@ function AdminCollections({ toast }) {
         </div>
       )}
 
-      {/* PRODUCTS MODAL */}
+      {/* PRODUCTS MODAL - REDESIGNED */}
       {isProductsModalOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="admin-card" style={{ width: '90%', maxWidth: 800, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="admin-card" style={{ width: '95%', maxWidth: 1200, height: '90vh', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <h3>Assign Products: {editing.title}</h3>
+                    <div>
+                        <h3 style={{ marginBottom: 4 }}>Assign Products: {editing.title}</h3>
+                        <p style={{ color: 'var(--ink-muted)', fontSize: 13 }}>Search and assign products. Order matters (items at top show first).</p>
+                    </div>
                     <button className="btn btn-ghost btn-sm" onClick={() => setIsProductsModalOpen(false)}><AIcon.Close /></button>
                 </div>
                 
-                <div style={{ overflowY: 'auto', flex: 1, border: '1px solid var(--line)', borderRadius: 4, padding: 8, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 8 }}>
-                    {products.map(p => {
-                        const isSelected = selectedProductIds.includes(p.id);
-                        return (
-                            <div 
-                                key={p.id} 
-                                onClick={() => toggleProductSelection(p.id)}
-                                style={{ 
-                                    border: `2px solid ${isSelected ? 'var(--gold-deep)' : 'var(--line)'}`, 
-                                    borderRadius: 4, padding: 8, cursor: 'pointer',
-                                    background: isSelected ? 'rgba(168, 133, 74, 0.1)' : 'transparent',
-                                    display: 'flex', gap: 8, alignItems: 'center'
-                                }}
-                            >
-                                <img src={p.image} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 2 }} />
-                                <div style={{ fontSize: 11, lineHeight: 1.2, overflow: 'hidden' }}>
-                                    <div style={{ fontWeight: 600 }}>{p.brand}</div>
-                                    <div style={{ color: 'var(--ink-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{p.title}</div>
+                <div style={{ display: 'flex', gap: 24, flex: 1, minHeight: 0 }}>
+                    {/* Left side: Selected Products */}
+                    <div style={{ flex: '0 0 45%', display: 'flex', flexDirection: 'column', border: '1px solid var(--gold-soft)', borderRadius: 6, background: '#faf9f7', overflow: 'hidden' }}>
+                        <div style={{ padding: '12px 16px', background: 'var(--gold-soft)', color: 'var(--ink)', fontWeight: 600, borderBottom: '1px solid rgba(0,0,0,0.1)' }}>
+                            Selected Items ({selectedProducts.length})
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+                            {selectedProducts.length === 0 ? (
+                                <div style={{ color: 'var(--ink-muted)', textAlign: 'center', padding: 40, fontSize: 14 }}>No products selected yet. Add some from the right.</div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    {selectedProducts.map((p, idx) => (
+                                        <div key={p.id} style={{ display: 'flex', gap: 12, alignItems: 'center', background: '#fff', border: '1px solid var(--line)', borderRadius: 4, padding: '8px 12px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                <button className="btn btn-ghost btn-sm" style={{ padding: 2, height: 'auto', minWidth: 'auto', color: idx === 0 ? '#ccc' : 'var(--ink)' }} onClick={() => moveProduct(idx, -1)} disabled={idx === 0}>▲</button>
+                                                <button className="btn btn-ghost btn-sm" style={{ padding: 2, height: 'auto', minWidth: 'auto', color: idx === selectedProducts.length - 1 ? '#ccc' : 'var(--ink)' }} onClick={() => moveProduct(idx, 1)} disabled={idx === selectedProducts.length - 1}>▼</button>
+                                            </div>
+                                            <img src={p.image} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 4, background: '#eee' }} />
+                                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                                                <div style={{ fontWeight: 600, fontSize: 13, textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.brand}</div>
+                                                <div style={{ fontSize: 12, color: 'var(--ink-muted)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{p.title}</div>
+                                                <div style={{ fontSize: 11, color: 'var(--gold-deep)' }}>${p.sale} <span style={{ textDecoration: 'line-through', color: '#aaa' }}>${p.rrp}</span></div>
+                                            </div>
+                                            <button className="btn btn-ghost btn-sm" style={{ color: 'red' }} onClick={() => removeProduct(p.id)} title="Remove">✕</button>
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                        )
-                    })}
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right side: Available Products */}
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid var(--line)', borderRadius: 6, overflow: 'hidden' }}>
+                        <div style={{ padding: 12, borderBottom: '1px solid var(--line)', background: '#f5f5f5', display: 'flex', gap: 12, alignItems: 'center' }}>
+                            <div style={{ fontWeight: 600 }}>Available Products</div>
+                            <input 
+                                type="text" 
+                                className="form-input" 
+                                placeholder="Search by brand, title..." 
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                style={{ flex: 1, padding: '6px 12px' }}
+                            />
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 12, alignContent: 'start' }}>
+                            {filteredProducts.map(p => {
+                                const isSelected = selectedProductIds.includes(p.id);
+                                if (isSelected) return null; // hide already selected items from available pool to keep it clean
+                                return (
+                                    <div 
+                                        key={p.id} 
+                                        onClick={() => addProduct(p.id)}
+                                        style={{ 
+                                            border: '1px solid var(--line)', 
+                                            borderRadius: 4, padding: 8, cursor: 'pointer',
+                                            background: '#fff',
+                                            display: 'flex', gap: 8, alignItems: 'center',
+                                            transition: 'border-color 0.2s'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--gold)'}
+                                        onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--line)'}
+                                    >
+                                        <img src={p.image} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 2 }} />
+                                        <div style={{ fontSize: 11, lineHeight: 1.2, overflow: 'hidden' }}>
+                                            <div style={{ fontWeight: 600 }}>{p.brand}</div>
+                                            <div style={{ color: 'var(--ink-muted)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{p.title}</div>
+                                            <div style={{ color: 'var(--gold)', marginTop: 4 }}>Add +</div>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {filteredProducts.length === 0 && (
+                                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: 'var(--ink-muted)' }}>No products found matching "{searchTerm}"</div>
+                            )}
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 12, color: 'var(--ink-muted)' }}>{selectedProductIds.length} products selected</div>
+                <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+                    <div style={{ fontSize: 14, color: 'var(--ink-muted)' }}>Saving will update the Live site immediately.</div>
                     <div style={{ display: 'flex', gap: 12 }}>
-                        <button className="btn btn-outline" onClick={() => setIsProductsModalOpen(false)}>Cancel</button>
-                        <button className="btn btn-ink" onClick={saveProductsSelection}>Save Selection</button>
+                        <button className="btn btn-outline" onClick={() => setIsProductsModalOpen(false)}>Cancel Changes</button>
+                        <button className="btn btn-ink" onClick={saveProductsSelection}>Save Collection Products</button>
                     </div>
                 </div>
             </div>
